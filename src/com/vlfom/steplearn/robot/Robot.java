@@ -6,25 +6,22 @@ import com.vlfom.steplearn.exceptions.RobotFallException;
 import java.util.ArrayList;
 
 public class Robot {
-    public int width;
-    public int height;
     public int weight;
     public Body body;
 
     private Leg supportingLeg;
 
-    private ArrayList<Leg> Legs;
+    private ArrayList<Leg> legs;
 
-    public Robot(Body body, int width, int height, int weight) {
+    public Robot(Body body) {
+        legs = new ArrayList<>();
         this.body = body;
-        this.width = width;
-        this.height = height;
-        this.weight = weight;
+        this.weight = body.weight;
     }
 
-    public void recalcSupportingLeg() throws RobotFallException {
-        for (Leg leg : Legs) {
-            if (leg.tib.angle == leg.foot.angle) {
+    public void updateStateInfo() throws RobotFallException {
+        for (Leg leg : legs) {
+            if (Math.abs(leg.tib.angle + leg.foot.angle - Math.PI) < 1e-8) {
                 supportingLeg = leg;
                 break;
             }
@@ -39,16 +36,16 @@ public class Robot {
     }
 
     public Leg getLeg(int id) throws IndexOutOfBoundsException {
-        return Legs.get(id);
+        return legs.get(id);
     }
 
     public int addLeg(Leg leg) {
-        Legs.add(leg);
-        return Legs.size() - 1;
+        legs.add(leg);
+        return legs.size() - 1;
     }
 
     public void rotateLeg(int id, int deg) throws HitObjectException {
-        Leg leg = Legs.get(id);
+        Leg leg = legs.get(id);
 
     }
 }
