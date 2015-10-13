@@ -7,13 +7,8 @@ public class RobotState extends State implements Cloneable {
     public RobotPicture robotPicture;
 
     @Override
-    public boolean compare(State o) {
-        return o instanceof RobotState && this.hash().equals(o.hash());
-    }
-
-    @Override
-    public Integer hash() {
-        Integer hash = 0;
+    public long hash() {
+        long hash = 0;
         for(int i = 0; i < robotPicture.robot.getLegsCount(); ++i)
             hash = hash * 181 + robotPicture.robot.getLeg(i).tib.angle;
         for(int i = 0; i < robotPicture.robot.getLegsCount(); ++i)
