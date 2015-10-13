@@ -1,8 +1,10 @@
 package com.vlfom.steplearn.visualisation;
 
 import com.vlfom.steplearn.draw.RobotPicture;
-import com.vlfom.steplearn.exceptions.HitObjectException;
 import com.vlfom.steplearn.exceptions.RobotFallException;
+import com.vlfom.steplearn.learning.general.QLearning;
+import com.vlfom.steplearn.learning.robot.RobotMarkovDecisionProcess;
+import com.vlfom.steplearn.learning.robot.RobotState;
 import com.vlfom.steplearn.robot.*;
 import com.vlfom.steplearn.robot.Robot;
 
@@ -12,20 +14,22 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.Line2D;
 
-public class Main extends JPanel implements ActionListener {
+public class MainBeta extends JPanel implements ActionListener {
     Timer timer;
     Robot robot;
     RobotPicture robotPicture;
+    RobotMarkovDecisionProcess mdp;
+    QLearning qLearning;
+    RobotState start, state;
 
-    public Main() {
-        timer = new Timer(100, this);
+    public MainBeta() {
+        timer = new Timer(200, this);
         timer.setInitialDelay(190);
         timer.start();
 
         robot = new Robot(new Body(100, 100, 5));
         robot.addLeg(new Leg(new Tib(50, 90, 2), new Foot(5, 200, 90, 1)));
         robot.addLeg(new Leg(new Tib(50, 90, 2), new Foot(5, 200, 90, 1)));
-
         robotPicture = new RobotPicture(robot, new Line2D.Double(0, -2, 700,
                 -2));
         try {
@@ -33,12 +37,37 @@ public class Main extends JPanel implements ActionListener {
         } catch (RobotFallException e) {
             e.printStackTrace();
         }
+
+
+        mdp = new RobotMarkovDecisionProcess();
+        qLearning = new QLearning(mdp);
+
+        start = new RobotState((RobotPicture) robotPicture.clone());
+
+        for (int i = 0; i < 10; ++i) {
+            state = (RobotState) start.clone();
+            for (int j = 0; j < 10000; ++j) {
+                state = (RobotState) qLearning.iterate(state, true);
+                if (state == null) {
+                    break;
+                }
+                try {
+                    state.robotPicture.updateStateInfo();
+                } catch (RobotFallException e) {
+                    break;
+                }
+            }
+        }
+
+        state = (RobotState) start.clone();
+
+        System.out.println("Ended learning.");
     }
 
     public static void main(String[] args) {
         JFrame frame = new JFrame("TimerBasedAnimation");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.add(new Main());
+        frame.add(new MainBeta());
         frame.setSize(700, 700);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
@@ -50,16 +79,16 @@ public class Main extends JPanel implements ActionListener {
         g2.translate(0, 2 * 700 - 800);
         g2.scale(1, -1);
         try {
-            g2.draw(robotPicture.getBodyCoords());
-            for (int i = 0; i < robot.getLegsCount(); ++i) {
-                g2.draw(robotPicture.getTibCoords(i));
-                g2.draw(robotPicture.getFootCoords(i));
+            g2.draw(state.robotPicture.getBodyCoords());
+            for (int i = 0; i < state.robotPicture.robot.getLegsCount(); ++i) {
+                g2.draw(state.robotPicture.getTibCoords(i));
+                g2.draw(state.robotPicture.getFootCoords(i));
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
         g2.setColor(Color.BLACK);
-        g2.draw(robotPicture.ground);
+        g2.draw(state.robotPicture.ground);
     }
 
     @Override
@@ -75,25 +104,16 @@ public class Main extends JPanel implements ActionListener {
 
         g2.setRenderingHints(rh);
 
-        try {
-            int angle = (int) (Math.random() * 10 - 5);
-            if (robot.getLeg(0).tib.angle + angle >= 18 && robot.getLeg(0)
-                    .tib.angle + angle <= 180 - 18) {
-                robotPicture.rotateLeg(0, angle, -angle);
-            }
-            robotPicture.updateStateInfo();
-        } catch (Exception ignored) {
+        state = (RobotState) qLearning.iterate(state, false);
+        if (state == null) {
+            state = (RobotState) start.clone();
+            System.out.println("Failed. Starting again.\n");
         }
 
-        for (int i = 1; i < robot.getLegsCount(); ++i) {
-            while (true) {
-                try {
-                    robotPicture.rotateLeg(i, (int) (Math.random() * 40 - 20)
-                            , (int) (Math.random() * 40 - 20));
-                    break;
-                } catch (HitObjectException ignored) {
-                }
-            }
+        try {
+            state.robotPicture.updateStateInfo();
+        } catch (RobotFallException e) {
+            e.printStackTrace();
         }
 
         render(g2);

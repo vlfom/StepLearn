@@ -1,14 +1,16 @@
 package com.vlfom.steplearn.learning.general;
 
+import com.vlfom.steplearn.learning.robot.RobotState;
+
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 
-public abstract class QLearning {
-    private MarkovDecisionProcess mdp;
-    TreeMap <Long, TreeMap <Long, Double> > q;
+public class QLearning {
+    TreeMap<Long, TreeMap<Long, Double>> q;
     Random random;
+    private MarkovDecisionProcess mdp;
 
     public QLearning(MarkovDecisionProcess mdp) {
         this.mdp = mdp;
@@ -16,57 +18,83 @@ public abstract class QLearning {
         random = new Random();
     }
 
-    public void update(State s, Action a, State n) {
+    public State iterate(State state, boolean learning) {
+        if (learning && !q.containsKey(state.hash())) {
+            populateState(state);
+        }
+
+        Action action = chooseNext(state, learning);
+
+        if (action == null) {
+            return null;
+        }
+
+        State next = action.applyAction(state);
+
+        update(state, action, next, learning);
+
+        return next;
+    }
+
+    private void populateState(State state) {
+        ArrayList<Action> actions = mdp.getActionsList(state);
+        for (Action action : actions) {
+            State next = action.applyAction(state);
+            update(state, action, next, true);
+        }
+    }
+
+    private void update(State s, Action a, State n, boolean learning) {
         long sHash = s.hash();
-        if(!q.containsKey(sHash)) {
+        if (!q.containsKey(sHash)) {
             q.put(sHash, new TreeMap<Long, Double>());
         }
         TreeMap<Long, Double> actions = q.get(sHash);
         Long aHash = a.hash();
-        Double prev = 0.0;
-        if(actions.containsKey(aHash))
-            prev = actions.get(sHash);
-        actions.put(sHash, (1-mdp.learningF) * prev + mdp.learningF * ( reward(s, n) + mdp
-                .discountF * valMax(s)) );
+        if (!actions.containsKey(aHash)) {
+            actions.put(aHash, 0.0);
+        }
+        Double prev = actions.get(aHash);
+        actions.put(aHash, (1 - mdp.learningF) * prev + mdp.learningF * (mdp
+                .reward(s, n) + mdp.discountF * valMax(s, learning)));
     }
 
-    public Action chooseNext(State s) {
-        ArrayList<Action> actions = new ArrayList<>();
-        try {
-            actions = mdp.getActionsList(s);
-        } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
+    private Action chooseNext(State s, boolean learning) {
+        ArrayList<Action> actions = mdp.getActionsList(s);
+        Long bestHash = argMax(s);
+        if (bestHash != null && (random.nextDouble() >= mdp.observationP ||
+                !learning)) {
+            if (!learning) {
+                return mdp.getAction(s, bestHash);
+            }
         }
-        if( random.nextDouble() <= mdp.observationP ) {
-            Action best = mdp.getAction(s, argMax(s));
-            if( best!= null )
-                return best;
+        if (actions.size() > 0) {
+            return actions.get(random.nextInt(actions.size()));
         }
-        return actions.get(random.nextInt(actions.size()));
+        return null;
     }
 
-    public abstract Double reward(State s, State n);
-
-    public Double valMax(State s) {
-        TreeMap <Long, Double> actions = q.get(s.hash());
+    private Double valMax(State s, boolean learning) {
+        TreeMap<Long, Double> actions = q.get(s.hash());
         Double maxValue = actions.firstEntry().getValue();
-        for(Map.Entry<Long, Double> entry : actions.entrySet()) {
-            if( entry.getValue() > maxValue ) {
+        for (Map.Entry<Long, Double> entry : actions.entrySet()) {
+            if (entry.getValue() > maxValue) {
                 maxValue = entry.getValue();
             }
         }
         return maxValue;
     }
 
-    public Long argMax(State s) {
+    private Long argMax(State s) {
         Long sHash = s.hash();
-        if(!q.containsKey(sHash))
+        if (!q.containsKey(sHash)) {
             return null;
-        TreeMap <Long, Double> actions = q.get(sHash);
+        }
+        TreeMap<Long, Double> actions = q.get(sHash);
         Long bestAction = actions.firstKey();
         Double maxValue = actions.firstEntry().getValue();
-        for(Map.Entry<Long, Double> entry : actions.entrySet()) {
-            if( entry.getValue() > maxValue ) {
+        for (Map.Entry<Long, Double> entry : actions.entrySet()) {
+            if (entry.getValue() > maxValue) {
                 maxValue = entry.getValue();
                 bestAction = entry.getKey();
             }

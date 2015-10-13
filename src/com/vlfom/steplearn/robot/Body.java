@@ -12,7 +12,7 @@ public class Body extends BodyPart implements Cloneable {
     }
 
     @Override
-    public Object clone() throws CloneNotSupportedException {
-        return super.clone();
+    protected Object clone() {
+        return new Body(width, height, weight);
     }
 }

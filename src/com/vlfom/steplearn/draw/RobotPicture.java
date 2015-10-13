@@ -12,7 +12,7 @@ import java.awt.geom.Rectangle2D;
 public class RobotPicture implements Cloneable {
     public Robot robot;
     public Line2D.Double ground;
-    private Point2D.Double bodyCoords;
+    public Point2D.Double bodyCoords;
 
     public RobotPicture(Robot robot, Line2D.Double ground) {
         bodyCoords = new Point2D.Double();
@@ -69,9 +69,9 @@ public class RobotPicture implements Cloneable {
         Line2D.Double tibCoords = getTibCoords(id);
         Line2D.Double footCoords = getTibCoords(id);
         Line2D.Double bodyBottom = new Line2D.Double(bodyCoords.x - robot
-                .body.width / 2.0, bodyCoords.y - robot.body.height / 2.0 + 1,
-                bodyCoords.x + robot.body.width / 2.0, bodyCoords.y - robot
-                .body.height / 2.0 + 1);
+                .body.width / 2.0, bodyCoords.y - robot.body.height / 2.0 +
+                1, bodyCoords.x + robot.body.width / 2.0, bodyCoords.y -
+                robot.body.height / 2.0 + 1);
 
         if (tibCoords.intersectsLine(ground) ||
                 tibCoords.intersectsLine(bodyBottom) ||
@@ -81,13 +81,17 @@ public class RobotPicture implements Cloneable {
             leg.foot.angle -= degFoot;
             throw new HitObjectException("");
         }
+
+        if (leg != robot.getSupportingLeg()) {
+            leg.foot.x = bodyCoords.x + leg.tib.length * Math.cos(Math
+                    .toRadians(leg.tib.angle));
+        }
     }
 
     @Override
-    public Object clone() throws CloneNotSupportedException {
-        RobotPicture cloned = (RobotPicture)super.clone();
-        cloned.robot = (Robot) robot.clone();
-        cloned.ground = (Line2D.Double) ground.clone();
+    public Object clone() {
+        RobotPicture cloned = new RobotPicture((Robot) robot.clone(), (Line2D
+                .Double) ground.clone());
         cloned.bodyCoords = (Point2D.Double) bodyCoords.clone();
         return cloned;
     }

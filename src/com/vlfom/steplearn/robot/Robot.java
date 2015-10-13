@@ -22,6 +22,7 @@ public class Robot implements Cloneable {
     }
 
     public void updateStateInfo() throws RobotFallException {
+        supportingLeg = null;
         for (Leg leg : legs) {
             if (leg.tib.angle + leg.foot.angle == 180) {
                 supportingLeg = leg;
@@ -51,9 +52,12 @@ public class Robot implements Cloneable {
     }
 
     @Override
-    public Object clone() throws CloneNotSupportedException {
-        Robot cloned = (Robot)super.clone();
-        cloned.body = (Body) body.clone();
+    public Object clone() {
+        Robot cloned = new Robot((Body) body.clone());
+        cloned.supportingLeg = (Leg) supportingLeg.clone();
+        cloned.legs = new ArrayList<>();
+        for(Leg leg:legs)
+            cloned.legs.add((Leg) leg.clone());
         return cloned;
     }
 }
