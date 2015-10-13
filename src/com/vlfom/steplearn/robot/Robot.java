@@ -21,7 +21,7 @@ public class Robot {
 
     public void updateStateInfo() throws RobotFallException {
         for (Leg leg : legs) {
-            if (Math.abs(leg.tib.angle + leg.foot.angle - Math.PI) < 1e-8) {
+            if (leg.tib.angle + leg.foot.angle == 180) {
                 supportingLeg = leg;
                 break;
             }
@@ -42,6 +42,10 @@ public class Robot {
     public int addLeg(Leg leg) {
         legs.add(leg);
         return legs.size() - 1;
+    }
+
+    public int getLegsCount() {
+        return legs.size();
     }
 
     public void rotateLeg(int id, int deg) throws HitObjectException {

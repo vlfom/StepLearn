@@ -2,9 +2,9 @@ package com.vlfom.steplearn.robot;
 
 public class Foot extends BodyPart {
     public int length;
-    public double angle;
+    public int angle;
 
-    public Foot(int length, int x, double angle, int weight) {
+    public Foot(int length, int x, int angle, int weight) {
         this.length = length;
         this.x = x;
         this.angle = angle;

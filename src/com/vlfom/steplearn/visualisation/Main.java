@@ -9,6 +9,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.geom.Line2D;
 
 public class Main extends JPanel implements ActionListener {
     Timer timer;
@@ -21,10 +22,10 @@ public class Main extends JPanel implements ActionListener {
         timer.start();
 
         robot = new Robot(new Body(100, 100, 5));
-        robot.addLeg(new Leg(new Tib(50, Math.PI / 2.0, 2), new Foot(5, 200,
-                Math.PI / 2.0, 1)));
-        robot.addLeg(new Leg(new Tib(50, Math.PI / 2.0, 2), new Foot(5, 200,
-                Math.PI / 2.0, 1)));
+        robot.addLeg(new Leg(new Tib(50, 90, 2), new Foot(5, 200,
+                90, 1)));
+        robot.addLeg(new Leg(new Tib(50, 90, 2), new Foot(5, 200,
+                90, 1)));
 
         robotPicture = new RobotPicture(robot);
         try {
@@ -46,6 +47,8 @@ public class Main extends JPanel implements ActionListener {
     public void render(Graphics2D g2) {
         g2.setColor(Color.BLUE);
         g2.setStroke(new BasicStroke(2));
+        g2.translate(0, 2 * 700 - 800);
+        g2.scale(1, -1);
         try {
             g2.draw(robotPicture.getBodyCoords());
             for (int i = 0; i < 2; ++i) {
@@ -55,6 +58,8 @@ public class Main extends JPanel implements ActionListener {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        g2.setColor(Color.BLACK);
+        g2.draw(new Line2D.Double(0, -2, 700, -2));
     }
 
     @Override
@@ -71,11 +76,42 @@ public class Main extends JPanel implements ActionListener {
         g2.setRenderingHints(rh);
 
 
-        double toSupport = Math.toRadians(Math.random()*10 - 5);
+        double toSupport = (int)(Math.random() * 10 - 5);
 
         robot.getLeg(0).tib.angle += toSupport;
         robot.getLeg(0).foot.angle += toSupport;
-        robot.getLeg(1).tib.angle += Math.toRadians(Math.random()*10 - 5);
+        if (robot.getLeg(0).tib.angle < 18 || robot.getLeg(0).tib
+                .angle > 180-18) {
+            robot.getLeg(0).tib.angle -= toSupport;
+            robot.getLeg(0).foot.angle -= toSupport;
+        }
+
+        for (int i = 1; i < robot.getLegsCount(); ++i) {
+            while (true) {
+                double notToSupport = (int)(Math.random() * 10 - 5);
+                robot.getLeg(i).tib.angle += notToSupport;
+                if (robot.getLeg(i).tib.angle < 18 || robot.getLeg
+                        (i).tib.angle > 180-18) {
+                    robot.getLeg(i).tib.angle -= notToSupport;
+                    continue;
+                }
+                if (robot.getLeg(0).tib.angle <= 90) {
+                    if (robot.getLeg(0).tib.angle >= robot.getLeg(i).tib
+                            .angle || robot.getLeg(i).tib.angle >= 180 - robot
+                            .getLeg(0).tib.angle) {
+                        break;
+                    }
+                } else {
+                    if (robot.getLeg(0).tib.angle <= robot.getLeg(i).tib
+                            .angle || robot.getLeg(i).tib.angle <= 180
+                            -robot.getLeg(0).tib.angle) {
+                        break;
+                    }
+                }
+                robot.getLeg(i).tib.angle -= notToSupport;
+            }
+        }
+
         try {
             robotPicture.updateStateInfo();
         } catch (RobotFallException e) {
