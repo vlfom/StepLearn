@@ -1,6 +1,7 @@
 package com.vlfom.steplearn.visualisation;
 
 import com.vlfom.steplearn.draw.RobotPicture;
+import com.vlfom.steplearn.exceptions.HitObjectException;
 import com.vlfom.steplearn.exceptions.RobotFallException;
 import com.vlfom.steplearn.robot.*;
 import com.vlfom.steplearn.robot.Robot;
@@ -22,12 +23,11 @@ public class Main extends JPanel implements ActionListener {
         timer.start();
 
         robot = new Robot(new Body(100, 100, 5));
-        robot.addLeg(new Leg(new Tib(50, 90, 2), new Foot(5, 200,
-                90, 1)));
-        robot.addLeg(new Leg(new Tib(50, 90, 2), new Foot(5, 200,
-                90, 1)));
+        robot.addLeg(new Leg(new Tib(50, 90, 2), new Foot(5, 200, 90, 1)));
+        robot.addLeg(new Leg(new Tib(50, 90, 2), new Foot(5, 200, 90, 1)));
 
-        robotPicture = new RobotPicture(robot);
+        robotPicture = new RobotPicture(robot, new Line2D.Double(0, -2, 700,
+                -2));
         try {
             robotPicture.updateStateInfo();
         } catch (RobotFallException e) {
@@ -59,11 +59,12 @@ public class Main extends JPanel implements ActionListener {
             e.printStackTrace();
         }
         g2.setColor(Color.BLACK);
-        g2.draw(new Line2D.Double(0, -2, 700, -2));
+        g2.draw(robotPicture.ground);
     }
 
     @Override
     public void paint(Graphics g) {
+
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
 
@@ -75,48 +76,27 @@ public class Main extends JPanel implements ActionListener {
 
         g2.setRenderingHints(rh);
 
-
-        double toSupport = (int)(Math.random() * 10 - 5);
-
-        robot.getLeg(0).tib.angle += toSupport;
-        robot.getLeg(0).foot.angle += toSupport;
-        if (robot.getLeg(0).tib.angle < 18 || robot.getLeg(0).tib
-                .angle > 180-18) {
-            robot.getLeg(0).tib.angle -= toSupport;
-            robot.getLeg(0).foot.angle -= toSupport;
+        try {
+            int angle = (int) (Math.random() * 10 - 5);
+            if (robot.getLeg(0).tib.angle + angle >= 18 && robot.getLeg(0)
+                    .tib.angle + angle <= 180 - 18) {
+                robotPicture.rotateLeg(0, angle, -angle);
+            }
+            robotPicture.updateStateInfo();
+        } catch (Exception ignored) {
         }
 
         for (int i = 1; i < robot.getLegsCount(); ++i) {
             while (true) {
-                double notToSupport = (int)(Math.random() * 10 - 5);
-                robot.getLeg(i).tib.angle += notToSupport;
-                if (robot.getLeg(i).tib.angle < 18 || robot.getLeg
-                        (i).tib.angle > 180-18) {
-                    robot.getLeg(i).tib.angle -= notToSupport;
-                    continue;
+                try {
+                    robotPicture.rotateLeg(i, (int) (Math.random() * 40 - 20)
+                            , (int) (Math.random() * 40 - 20));
+                    break;
+                } catch (HitObjectException ignored) {
                 }
-                if (robot.getLeg(0).tib.angle <= 90) {
-                    if (robot.getLeg(0).tib.angle >= robot.getLeg(i).tib
-                            .angle || robot.getLeg(i).tib.angle >= 180 - robot
-                            .getLeg(0).tib.angle) {
-                        break;
-                    }
-                } else {
-                    if (robot.getLeg(0).tib.angle <= robot.getLeg(i).tib
-                            .angle || robot.getLeg(i).tib.angle <= 180
-                            -robot.getLeg(0).tib.angle) {
-                        break;
-                    }
-                }
-                robot.getLeg(i).tib.angle -= notToSupport;
             }
         }
 
-        try {
-            robotPicture.updateStateInfo();
-        } catch (RobotFallException e) {
-            e.printStackTrace();
-        }
         render(g2);
     }
 

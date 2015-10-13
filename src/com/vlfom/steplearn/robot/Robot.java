@@ -35,7 +35,7 @@ public class Robot {
         return supportingLeg;
     }
 
-    public Leg getLeg(int id) throws IndexOutOfBoundsException {
+    public Leg getLeg(int id) {
         return legs.get(id);
     }
 
@@ -46,10 +46,5 @@ public class Robot {
 
     public int getLegsCount() {
         return legs.size();
-    }
-
-    public void rotateLeg(int id, int deg) throws HitObjectException {
-        Leg leg = legs.get(id);
-
     }
 }
