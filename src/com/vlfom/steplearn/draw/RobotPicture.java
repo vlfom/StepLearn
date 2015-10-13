@@ -9,7 +9,7 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
-public class RobotPicture {
+public class RobotPicture implements Cloneable {
     public Robot robot;
     public Line2D.Double ground;
     private Point2D.Double bodyCoords;
@@ -81,5 +81,14 @@ public class RobotPicture {
             leg.foot.angle -= degFoot;
             throw new HitObjectException("");
         }
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        RobotPicture cloned = (RobotPicture)super.clone();
+        cloned.robot = (Robot) robot.clone();
+        cloned.ground = (Line2D.Double) ground.clone();
+        cloned.bodyCoords = (Point2D.Double) bodyCoords.clone();
+        return cloned;
     }
 }

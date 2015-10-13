@@ -25,6 +25,9 @@ public class Main extends JPanel implements ActionListener {
         robot = new Robot(new Body(100, 100, 5));
         robot.addLeg(new Leg(new Tib(50, 90, 2), new Foot(5, 200, 90, 1)));
         robot.addLeg(new Leg(new Tib(50, 90, 2), new Foot(5, 200, 90, 1)));
+        robot.addLeg(new Leg(new Tib(50, 90, 2), new Foot(5, 200, 90, 1)));
+        robot.addLeg(new Leg(new Tib(50, 90, 2), new Foot(5, 200, 90, 1)));
+        robot.addLeg(new Leg(new Tib(50, 90, 2), new Foot(5, 200, 90, 1)));
 
         robotPicture = new RobotPicture(robot, new Line2D.Double(0, -2, 700,
                 -2));
@@ -51,7 +54,7 @@ public class Main extends JPanel implements ActionListener {
         g2.scale(1, -1);
         try {
             g2.draw(robotPicture.getBodyCoords());
-            for (int i = 0; i < 2; ++i) {
+            for (int i = 0; i < robot.getLegsCount(); ++i) {
                 g2.draw(robotPicture.getTibCoords(i));
                 g2.draw(robotPicture.getFootCoords(i));
             }
@@ -64,7 +67,6 @@ public class Main extends JPanel implements ActionListener {
 
     @Override
     public void paint(Graphics g) {
-
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
 

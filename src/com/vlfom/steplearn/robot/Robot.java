@@ -3,9 +3,11 @@ package com.vlfom.steplearn.robot;
 import com.vlfom.steplearn.exceptions.HitObjectException;
 import com.vlfom.steplearn.exceptions.RobotFallException;
 
+import java.awt.geom.Line2D;
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 
-public class Robot {
+public class Robot implements Cloneable {
     public int weight;
     public Body body;
 
@@ -46,5 +48,12 @@ public class Robot {
 
     public int getLegsCount() {
         return legs.size();
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        Robot cloned = (Robot)super.clone();
+        cloned.body = (Body) body.clone();
+        return cloned;
     }
 }
