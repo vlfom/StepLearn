@@ -12,7 +12,7 @@ public class RobotState extends State implements Cloneable {
 
     @Override
     public String toString() {
-        String string = "";
+        String string = "State: ";
         for(int i = 0 ; i < robotPicture.robot.getLegsCount(); ++i)
             string += "{" + robotPicture.robot.getLeg(i).tib.angle + ", " +
                     robotPicture.robot.getLeg(i).foot.angle + "} ";
@@ -28,6 +28,7 @@ public class RobotState extends State implements Cloneable {
         for (int i = 0; i < robotPicture.robot.getLegsCount(); ++i) {
             hash = hash * 181 + robotPicture.robot.getLeg(i).foot.angle;
         }
+        hash = hash * 181 + robotPicture.robot.getSupportingLegIndex();
         return hash;
     }
 

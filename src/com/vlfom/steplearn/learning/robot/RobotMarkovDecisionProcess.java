@@ -3,7 +3,6 @@ package com.vlfom.steplearn.learning.robot;
 import com.vlfom.steplearn.learning.general.Action;
 import com.vlfom.steplearn.learning.general.MarkovDecisionProcess;
 import com.vlfom.steplearn.learning.general.State;
-import com.vlfom.steplearn.robot.Robot;
 
 import java.util.ArrayList;
 
@@ -23,6 +22,8 @@ public class RobotMarkovDecisionProcess extends MarkovDecisionProcess {
     public Action getAction(State state, Long hash) {
         int cnt = ((RobotState) state).robotPicture.robot.getLegsCount();
         RobotAction action = new RobotAction(cnt);
+        action.supportingLegIndex = (int)(hash % 29);
+        hash /= 29;
         for (int i = cnt - 1; i >= 0; --i) {
             action.footRotation.set(i, (int) (hash % 29) - 14);
             hash /= 29;
@@ -37,12 +38,12 @@ public class RobotMarkovDecisionProcess extends MarkovDecisionProcess {
     @Override
     public double reward(State s, State n) {
         if (n == null) {
-            return -1e6;
+            return -1e9;
         }
 
         double x1 = ((RobotState) s).robotPicture.bodyCoords.x;
         double x2 = ((RobotState) n).robotPicture.bodyCoords.x;
-        return x2 - x1;
+        return (x2 - x1) * 1000;
     }
 
     @Override
@@ -55,25 +56,47 @@ public class RobotMarkovDecisionProcess extends MarkovDecisionProcess {
         RobotAction robotAction = new RobotAction(state.robotPicture.robot
                 .getLegsCount());
 
-        int[][] angles = new int[9][2];
         for (int i = -1; i <= 1; ++i) {
-            for (int j = -1; j <= 1; ++j) {
-                angles[(i + 1) * 3 + (j + 1)][0] = i;
-                angles[(i + 1) * 3 + (j + 1)][1] = j;
-            }
+            for (int j = -1; j <= 1; ++j)
+                if (i != 0 || j != 0) {
+                    robotAction.tibRotation.set(0, i);
+                    robotAction.footRotation.set(0, -i);
+                    robotAction.tibRotation.set(1, j);
+                    robotAction.footRotation.set(1, -j);
+                    for (int k = 0; k < 2; ++k) {
+                        robotAction.supportingLegIndex = k;
+                        if (robotAction.applyAction(s) != null) {
+                            robotActions.add((RobotAction) robotAction.clone());
+                        }
+                    }
+                }
         }
 
-        for (int i = 0; i < 9; ++i) {
-            for (int j = 0; j < 9; ++j) {
-                robotAction.tibRotation.set(0, angles[i][0]);
-                robotAction.footRotation.set(0, angles[i][1]);
-                robotAction.tibRotation.set(1, angles[j][0]);
-                robotAction.footRotation.set(1, angles[j][1]);
-                if (robotAction.applyAction(s) != null) {
-                    robotActions.add((RobotAction) robotAction.clone());
-                }
-            }
-        }
+//        int[][] angles = new int[9][2];
+//        for (int i = -1; i <= 1; ++i) {
+//            for (int j = -1; j <= 1; ++j) {
+//                angles[(i + 1) * 3 + (j + 1)][0] = i;
+//                angles[(i + 1) * 3 + (j + 1)][1] = j;
+//            }
+//        }
+
+
+//        for (int i = 0; i < 9; ++i) {
+//            for (int j = 0; j < 9; ++j) {
+//                if( i == 4 && j == 4 )
+//                    continue;
+//                robotAction.tibRotation.set(0, angles[i][0]);
+//                robotAction.footRotation.set(0, angles[i][1]);
+//                robotAction.tibRotation.set(1, angles[j][0]);
+//                robotAction.footRotation.set(1, angles[j][1]);
+//                for(int k = 0 ; k < 2 ; ++k) {
+//                    robotAction.supportingLegIndex = k;
+//                    if (robotAction.applyAction(s) != null) {
+//                        robotActions.add((RobotAction) robotAction.clone());
+//                    }
+//                }
+//            }
+//        }
 
         return robotActions;
     }

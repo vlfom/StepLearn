@@ -20,15 +20,6 @@ public class RobotPicture implements Cloneable {
         this.ground = ground;
     }
 
-    public void updateStateInfo() throws RobotFallException {
-        robot.updateStateInfo();
-        Leg leg = robot.getSupportingLeg();
-        bodyCoords.x = leg.foot.x + leg.tib.length * Math.cos(Math.toRadians
-                (leg.tib.angle));
-        bodyCoords.y = robot.body.height / 2.0 + leg.tib.length * Math.sin
-                (Math.toRadians(leg.tib.angle));
-    }
-
     public Rectangle2D.Double getBodyCoords() {
         return new Rectangle2D.Double(bodyCoords.x - robot.body.width / 2.0,
                 bodyCoords.y - robot.body.height / 2.0, robot.body.width,
@@ -59,20 +50,42 @@ public class RobotPicture implements Cloneable {
                 .toRadians(leg.foot.angle + leg.tib.angle)));
     }
 
-    public void rotateLeg(int id, int degTib, int degFoot) throws
-            HitObjectException {
-        Leg leg = robot.getLeg(id);
+    public void rotateSupportingLeg(int degTib, int degFoot) throws
+            RobotFallException {
+        Leg leg = robot.getSupportingLeg();
+
+        if (leg.tib.angle + leg.foot.angle != 180)
+            throw new RobotFallException("");
 
         leg.tib.angle += degTib;
         leg.foot.angle += degFoot;
 
+        if (leg.tib.angle + leg.foot.angle != 180 ||
+                leg.tib.angle <= 0 || leg.tib.angle >= 180 ||
+                leg.foot.angle <= 0 || leg.foot.angle >= 180) {
+            leg.tib.angle -= degTib;
+            leg.foot.angle -= degFoot;
+            throw new RobotFallException("");
+        }
+
+        bodyCoords.x = leg.foot.x - leg.tib.length * Math.cos(Math.toRadians
+                (180 - leg.foot.angle));
+        bodyCoords.y = robot.body.height / 2.0 + leg.tib.length * Math.sin
+                (Math.toRadians(180 - leg.foot.angle));
+    }
+
+    public void rotateRegularLeg(int id, int degTib, int degFoot) throws
+            HitObjectException {
+        Leg leg = robot.getLeg(id);
+        leg.tib.angle += degTib;
+        leg.foot.angle += degFoot;
+
         Line2D.Double tibCoords = getTibCoords(id);
-        Line2D.Double footCoords = getTibCoords(id);
+        Line2D.Double footCoords = getFootCoords(id);
         Line2D.Double bodyBottom = new Line2D.Double(bodyCoords.x - robot
                 .body.width / 2.0, bodyCoords.y - robot.body.height / 2.0 +
-                1, bodyCoords.x + robot.body.width / 2.0, bodyCoords.y -
-                robot.body.height / 2.0 + 1);
-
+                2, bodyCoords.x + robot.body.width / 2.0, bodyCoords.y -
+                robot.body.height / 2.0 + 2);
         if (tibCoords.intersectsLine(ground) ||
                 tibCoords.intersectsLine(bodyBottom) ||
                 footCoords.intersectsLine(ground) ||
@@ -82,10 +95,8 @@ public class RobotPicture implements Cloneable {
             throw new HitObjectException("");
         }
 
-        if (leg != robot.getSupportingLeg()) {
-            leg.foot.x = bodyCoords.x + leg.tib.length * Math.cos(Math
-                    .toRadians(leg.tib.angle));
-        }
+        leg.foot.x = bodyCoords.x + leg.tib.length * Math.cos(Math.toRadians
+                (leg.tib.angle));
     }
 
     @Override

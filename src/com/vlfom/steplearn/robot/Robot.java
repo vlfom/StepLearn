@@ -12,6 +12,7 @@ public class Robot implements Cloneable {
     public Body body;
 
     private Leg supportingLeg;
+    private int supportingLegIndex;
 
     private ArrayList<Leg> legs;
 
@@ -21,21 +22,17 @@ public class Robot implements Cloneable {
         this.weight = body.weight;
     }
 
-    public void updateStateInfo() throws RobotFallException {
-        supportingLeg = null;
-        for (Leg leg : legs) {
-            if (leg.tib.angle + leg.foot.angle == 180) {
-                supportingLeg = leg;
-                break;
-            }
-        }
-        if (supportingLeg == null) {
-            throw new RobotFallException("No supporting leg found.");
-        }
+    public void setSupportingLeg(int id) {
+        supportingLeg = legs.get(id);
+        supportingLegIndex = id;
     }
 
     public Leg getSupportingLeg() {
         return supportingLeg;
+    }
+
+    public int getSupportingLegIndex() {
+        return supportingLegIndex;
     }
 
     public Leg getLeg(int id) {
@@ -54,6 +51,7 @@ public class Robot implements Cloneable {
     @Override
     public Object clone() {
         Robot cloned = new Robot((Body) body.clone());
+        cloned.supportingLegIndex = supportingLegIndex;
         cloned.supportingLeg = (Leg) supportingLeg.clone();
         cloned.legs = new ArrayList<>();
         for(Leg leg:legs)
