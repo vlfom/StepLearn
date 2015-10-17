@@ -1,7 +1,7 @@
 package com.vlfom.steplearn.visualisation;
 
 import com.vlfom.steplearn.draw.RobotPicture;
-import com.vlfom.steplearn.learning.general.*;
+import com.vlfom.steplearn.learning.general.QLearning;
 import com.vlfom.steplearn.learning.robot.RobotAction;
 import com.vlfom.steplearn.learning.robot.RobotMarkovDecisionProcess;
 import com.vlfom.steplearn.learning.robot.RobotState;
@@ -15,12 +15,14 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.geom.Line2D;
+import java.util.ArrayList;
 
 public class MainBeta extends JPanel implements ActionListener {
+    public RobotState start, state;
     Timer timer;
     RobotMarkovDecisionProcess mdp;
+    RobotAction lastAction;
     QLearning qLearning;
-    public RobotState start, state;
 
     public MainBeta() {
         this.addKeyListener(new MyKeyListener());
@@ -30,24 +32,34 @@ public class MainBeta extends JPanel implements ActionListener {
         timer.start();
 
         Robot robot = new Robot(new Body(50, 100, 5));
-        robot.addLeg(new Leg(new Tib(60, 90, 2), new Foot(5, 200, 90, 1)));
-        robot.addLeg(new Leg(new Tib(60, 90, 2), new Foot(5, 200, 90, 1)));
+        robot.addLeg(new Leg(new Tib(100, 90, 2), new Foot(5, 200, 90, 1)));
+        robot.addLeg(new Leg(new Tib(100, 90, 2), new Foot(5, 200, 90, 1)));
         robot.setSupportingLeg(0);
-        RobotPicture robotPicture = new RobotPicture(
-                robot, new Line2D.Double(0, -1, 700, -1)
-        );
+        RobotPicture robotPicture = new RobotPicture(robot, new Line2D.Double
+                (0, -1, 700, -1));
+        robotPicture.initialize();
 
-        mdp = new RobotMarkovDecisionProcess();
+        mdp = new RobotMarkovDecisionProcess(robotPicture);
         qLearning = new QLearning(mdp);
 
-        start = new RobotState((RobotPicture) robotPicture.clone());
+        ArrayList<Integer> tibAngle = new ArrayList<>(robot.getLegsCount());
+        ArrayList<Integer> footAngle = new ArrayList<>(robot.getLegsCount());
+        ArrayList<Double> footCoords = new ArrayList<>(robot.getLegsCount());
+        for (int i = 0; i < robot.getLegsCount(); ++i) {
+            tibAngle.add(robotPicture.robot.getLeg(i).tib.angle);
+            footAngle.add(robotPicture.robot.getLeg(i).foot.angle);
+            footCoords.add(robotPicture.robot.getLeg(i).foot.x);
+        }
+        start = new RobotState(robot.body.x, robot.getLegsCount(), robot
+                .supportingLegIndex, tibAngle, footAngle, footCoords);
 
         int repeatsNumber = 1000;
         int repeatDepth = 1000;
         for (int i = 0; i < repeatsNumber; ++i) {
-            if( i%(repeatsNumber/100) == 0) System.out.print(i/
-                    (repeatsNumber/100) + "%, ");
-            state = (RobotState) start.clone();
+            if (i % (repeatsNumber / 100) == 0) {
+                System.out.print(i / (repeatsNumber / 100) + "%, ");
+            }
+            state = (RobotState) start.copy();
             for (int j = 0; j < repeatDepth; ++j) {
                 state = (RobotState) qLearning.iterate(state, true);
                 if (state == null) {
@@ -56,21 +68,9 @@ public class MainBeta extends JPanel implements ActionListener {
             }
         }
 
-        state = (RobotState) start.clone();
+        state = (RobotState) start.copy();
 
         System.out.println("Ended learning.\n");
-    }
-
-    class MyKeyListener implements KeyListener {
-        public void keyPressed(KeyEvent e) {
-            state = (RobotState) start.clone();
-        }
-
-        public void keyReleased(KeyEvent e) {
-        }
-
-        public void keyTyped(KeyEvent e) {
-        }
     }
 
     public static void main(String[] args) {
@@ -89,20 +89,21 @@ public class MainBeta extends JPanel implements ActionListener {
         g2.setStroke(new BasicStroke(2));
         g2.translate(0, 2 * 700 - 800);
         g2.scale(1, -1);
-        g2.draw(state.robotPicture.getBodyCoords());
 
-        for (int i = 0; i < state.robotPicture.robot.getLegsCount(); ++i) {
-            if( i%2 == 0)
-                g2.setColor(Color.RED);
-            else
-                g2.setColor(Color.BLUE);
-            g2.draw(state.robotPicture.getTibCoords(i));
-            g2.draw(state.robotPicture.getFootCoords(i));
+        RobotPicture robotPicture = mdp.getSpecificRobotPicture(state);
+
+        g2.draw(robotPicture.getBodyCoords());
+
+        Color colors[] = {Color.RED, Color.BLUE, Color.GREEN};
+
+        for (int i = 0; i < robotPicture.robot.getLegsCount(); ++i) {
+            g2.setColor(colors[i]);
+            g2.draw(robotPicture.getTibCoords(i));
+            g2.draw(robotPicture.getFootCoords(i));
         }
         g2.setColor(Color.BLACK);
-        g2.draw(new Line2D.Double(state.robotPicture.ground.x1, state
-                .robotPicture.ground.y1 - 2, state.robotPicture.ground.x2,
-                state.robotPicture.ground.y2 - 2));
+        g2.draw(new Line2D.Double(robotPicture.ground.x1, robotPicture.ground
+                .y1 - 2, robotPicture.ground.x2, robotPicture.ground.y2 - 2));
     }
 
     @Override
@@ -124,7 +125,7 @@ public class MainBeta extends JPanel implements ActionListener {
 
         state = (RobotState) qLearning.iterate(state, false);
         if (state == null) {
-            state = (RobotState) start.clone();
+            state = (RobotState) start.copy();
             System.out.println("Failed. Starting again.\n");
         }
 
@@ -140,28 +141,43 @@ public class MainBeta extends JPanel implements ActionListener {
         robotAction.tibRotation.set(1, 1);
         robotAction.footRotation.set(1, -1);
         robotAction.supportingLegIndex = 0;
-        System.out.println(robotAction.applyAction(state));
+        System.out.println(mdp.applyAction(state, robotAction));
 
         outputStateInfo(state);
     }
 
     void outputStateInfo(RobotState state) {
+        RobotPicture robotPicture = mdp.getSpecificRobotPicture(state);
         System.out.println(state + " " +
-                state.robotPicture.bodyCoords.x + " " +
-                state.robotPicture.robot.getSupportingLeg().foot.x +
+                robotPicture.bodyCoords.x + " " +
+                robotPicture.robot.getSupportingLeg().foot.x +
                 "    {" +
-                (state.robotPicture.robot.getLeg(0) == state.robotPicture
-                        .robot.getSupportingLeg() ? 0 : 1) + "}");
+                (robotPicture.robot.getLeg(0) == robotPicture.robot
+                        .getSupportingLeg() ? 0 : 1) + "}");
     }
 
     void outputAllPossibleActions(RobotState state) {
-        for(com.vlfom.steplearn.learning.general.Action action : mdp.getActionsList(state))
-            System.out.println(action + " " + mdp.reward(state, action
-                    .applyAction(state)));
+        for (com.vlfom.steplearn.learning.general.Action action : mdp
+                .getActionsList(state, false)) {
+            System.out.println(action + " " + qLearning.q.get(state.hash())
+                    .get(action.hash()));
+        }
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
         repaint();
+    }
+
+    class MyKeyListener implements KeyListener {
+        public void keyPressed(KeyEvent e) {
+            state = (RobotState) start.copy();
+        }
+
+        public void keyReleased(KeyEvent e) {
+        }
+
+        public void keyTyped(KeyEvent e) {
+        }
     }
 }

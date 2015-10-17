@@ -7,16 +7,11 @@ public abstract class MarkovDecisionProcess {
     public double discountF = 0.7;
     public double observationP = 0.5;
 
-    private static int rotationSpeedLeftBorder = -5;
-    private static int rotationSpeedRightBorder = 5;
-
-    private static int rotationStep = 1;
-
-    public abstract ArrayList<Action> getActionsList(State s);
-
-    public abstract boolean compare(State a, State b);
+    public abstract ArrayList<Action> getActionsList(State s, boolean learning);
 
     public abstract Action getAction(State state, Long hash);
 
     public abstract double reward(State s, State n);
+
+    public abstract State applyAction(State state, Action action);
 }

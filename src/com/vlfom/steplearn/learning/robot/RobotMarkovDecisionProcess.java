@@ -1,5 +1,8 @@
 package com.vlfom.steplearn.learning.robot;
 
+import com.vlfom.steplearn.draw.RobotPicture;
+import com.vlfom.steplearn.exceptions.HitObjectException;
+import com.vlfom.steplearn.exceptions.RobotFallException;
 import com.vlfom.steplearn.learning.general.Action;
 import com.vlfom.steplearn.learning.general.MarkovDecisionProcess;
 import com.vlfom.steplearn.learning.general.State;
@@ -7,22 +10,17 @@ import com.vlfom.steplearn.learning.general.State;
 import java.util.ArrayList;
 
 public class RobotMarkovDecisionProcess extends MarkovDecisionProcess {
-    private static int rotationSpeedLeftBorder = -5;
-    private static int rotationSpeedRightBorder = 5;
+    public RobotPicture robotPicture;
 
-    private static int rotationStep = 1;
-
-    @Override
-    public boolean compare(State a, State b) {
-        return a instanceof RobotState && b instanceof RobotState && Long
-                .valueOf(a.hash()).equals(b.hash());
+    public RobotMarkovDecisionProcess(RobotPicture robotPicture) {
+        this.robotPicture = robotPicture;
     }
 
     @Override
     public Action getAction(State state, Long hash) {
-        int cnt = ((RobotState) state).robotPicture.robot.getLegsCount();
+        int cnt = robotPicture.robot.getLegsCount();
         RobotAction action = new RobotAction(cnt);
-        action.supportingLegIndex = (int)(hash % 29);
+        action.supportingLegIndex = (int) (hash % 29);
         hash /= 29;
         for (int i = cnt - 1; i >= 0; --i) {
             action.footRotation.set(i, (int) (hash % 29) - 14);
@@ -41,62 +39,92 @@ public class RobotMarkovDecisionProcess extends MarkovDecisionProcess {
             return -1e9;
         }
 
-        double x1 = ((RobotState) s).robotPicture.bodyCoords.x;
-        double x2 = ((RobotState) n).robotPicture.bodyCoords.x;
-        return (x2 - x1) * 1000;
+        return (((RobotState) n).bodyX - ((RobotState) s).bodyX) * 1000;
+    }
+
+    public RobotPicture getSpecificRobotPicture(RobotState s) {
+        robotPicture.robot.setSupportingLeg(s.supportingLegIndex);
+        for (int i = 0; i < s.legsCount; ++i) {
+            robotPicture.robot.legs.get(i).tib.angle = s.tibAngle.get(i);
+            robotPicture.robot.legs.get(i).foot.angle = s.footAngle.get(i);
+            robotPicture.robot.legs.get(i).foot.x = s.footCoords.get(i);
+        }
+        robotPicture.initialize();
+        return robotPicture;
     }
 
     @Override
-    public ArrayList<Action> getActionsList(State s) {
-        if (!(s instanceof RobotState)) {
+    public State applyAction(State s, Action a) {
+        RobotState rs = (RobotState) s;
+        RobotAction ra = (RobotAction) a;
+
+        robotPicture.robot.setSupportingLeg(ra.supportingLegIndex);
+        for (int i = 0; i < rs.legsCount; ++i) {
+            robotPicture.robot.legs.get(i).tib.angle = rs.tibAngle.get(i);
+            robotPicture.robot.legs.get(i).foot.angle = rs.footAngle.get(i);
+            robotPicture.robot.legs.get(i).foot.x = rs.footCoords.get(i);
+        }
+        robotPicture.initialize();
+
+        try {
+            robotPicture.rotateSupportingLeg(ra.tibRotation.get(ra
+                    .supportingLegIndex), ra.footRotation.get(ra
+                    .supportingLegIndex));
+        } catch (RobotFallException e) {
             return null;
         }
-        RobotState state = (RobotState) s;
+
+        for (int i = 0; i < robotPicture.robot.getLegsCount(); ++i) {
+            if (i != ra.supportingLegIndex) {
+                try {
+                    robotPicture.rotateRegularLeg(i, ra.tibRotation.get(i),
+                            ra.footRotation.get(i));
+                } catch (HitObjectException e) {
+                    return null;
+                }
+            }
+        }
+
+        RobotState ns = new RobotState();
+        ns.legsCount = rs.legsCount;
+        ns.bodyX = robotPicture.bodyCoords.x;
+        ns.tibAngle = new ArrayList<>(rs.legsCount);
+        ns.footAngle = new ArrayList<>(rs.legsCount);
+        ns.footCoords = new ArrayList<>(rs.legsCount);
+
+        for (int i = 0; i < rs.legsCount; ++i) {
+            ns.tibAngle.add(robotPicture.robot.getLeg(i).tib.angle);
+            ns.footAngle.add(robotPicture.robot.getLeg(i).foot.angle);
+            ns.footCoords.add(robotPicture.robot.getLeg(i).foot.x);
+        }
+
+        return ns;
+    }
+
+    @Override
+    public ArrayList<Action> getActionsList(State s, boolean learning) {
         ArrayList<Action> robotActions = new ArrayList<>();
-        RobotAction robotAction = new RobotAction(state.robotPicture.robot
+        RobotAction robotAction = new RobotAction(robotPicture.robot
                 .getLegsCount());
 
-        for (int i = -1; i <= 1; ++i) {
-            for (int j = -1; j <= 1; ++j)
-                if (i != 0 || j != 0) {
-                    robotAction.tibRotation.set(0, i);
-                    robotAction.footRotation.set(0, -i);
-                    robotAction.tibRotation.set(1, j);
-                    robotAction.footRotation.set(1, -j);
-                    for (int k = 0; k < 2; ++k) {
+        int angle = 1;
+        for (int i = -1; i <= 1; i += 2) {
+            for (int j = -1; j <= 1; j += 2) {
+                if (i != j || Math.random() < 0.5) {
+                    robotAction.tibRotation.set(0, i * angle);
+                    robotAction.footRotation.set(0, -i * angle);
+                    robotAction.tibRotation.set(1, j * angle);
+                    robotAction.footRotation.set(1, -j * angle);
+                    for (int k = 0; k < robotPicture.robot.getLegsCount();
+                         ++k) {
                         robotAction.supportingLegIndex = k;
-                        if (robotAction.applyAction(s) != null) {
-                            robotActions.add((RobotAction) robotAction.clone());
+                        if (applyAction(s, robotAction) != null) {
+                            robotActions.add((RobotAction) robotAction.copy());
                         }
                     }
                 }
+            }
         }
-
-//        int[][] angles = new int[9][2];
-//        for (int i = -1; i <= 1; ++i) {
-//            for (int j = -1; j <= 1; ++j) {
-//                angles[(i + 1) * 3 + (j + 1)][0] = i;
-//                angles[(i + 1) * 3 + (j + 1)][1] = j;
-//            }
-//        }
-
-
-//        for (int i = 0; i < 9; ++i) {
-//            for (int j = 0; j < 9; ++j) {
-//                if( i == 4 && j == 4 )
-//                    continue;
-//                robotAction.tibRotation.set(0, angles[i][0]);
-//                robotAction.footRotation.set(0, angles[i][1]);
-//                robotAction.tibRotation.set(1, angles[j][0]);
-//                robotAction.footRotation.set(1, angles[j][1]);
-//                for(int k = 0 ; k < 2 ; ++k) {
-//                    robotAction.supportingLegIndex = k;
-//                    if (robotAction.applyAction(s) != null) {
-//                        robotActions.add((RobotAction) robotAction.clone());
-//                    }
-//                }
-//            }
-//        }
 
         return robotActions;
     }

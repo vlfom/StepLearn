@@ -1,15 +1,11 @@
 package com.vlfom.steplearn.learning.robot;
 
-import com.vlfom.steplearn.draw.RobotPicture;
-import com.vlfom.steplearn.exceptions.HitObjectException;
-import com.vlfom.steplearn.exceptions.RobotFallException;
 import com.vlfom.steplearn.learning.general.Action;
-import com.vlfom.steplearn.learning.general.State;
 
 import java.util.ArrayList;
 import java.util.Collections;
 
-public class RobotAction extends Action implements Cloneable {
+public class RobotAction extends Action {
     public ArrayList<Integer> tibRotation;
     public ArrayList<Integer> footRotation;
     public int supportingLegIndex;
@@ -22,39 +18,12 @@ public class RobotAction extends Action implements Cloneable {
     @Override
     public String toString() {
         String string = "Action: ";
-        for(int i = 0 ; i < tibRotation.size(); ++i)
+        for (int i = 0; i < tibRotation.size(); ++i) {
             string += "{" + tibRotation.get(i) + ", " +
                     footRotation.get(i) + "} ";
+        }
         string += "{" + supportingLegIndex + "}";
         return string;
-    }
-
-    @Override
-    public State applyAction(State s) {
-        if (!(s instanceof RobotState)) {
-            return null;
-        }
-        RobotState newState = (RobotState) ((RobotState) s).clone();
-        RobotPicture robotPicture = newState.robotPicture;
-        robotPicture.robot.setSupportingLeg(supportingLegIndex);
-
-        try {
-            robotPicture.rotateSupportingLeg(tibRotation.get
-                    (supportingLegIndex), footRotation.get(supportingLegIndex));
-        } catch (RobotFallException e) {
-            return null;
-        }
-
-        for (int i = 0; i < robotPicture.robot.getLegsCount(); ++i)
-            if (i != supportingLegIndex) {
-                try {
-                    robotPicture.rotateRegularLeg(i, tibRotation.get(i), footRotation.get(i));
-                } catch (HitObjectException e) {
-                    return null;
-                }
-            }
-
-        return newState;
     }
 
     @Override
@@ -66,16 +35,16 @@ public class RobotAction extends Action implements Cloneable {
         for (Integer angle : footRotation) {
             hash = hash * 29 + (angle + 14);
         }
-        hash = hash*29 + supportingLegIndex;
+        hash = hash * 29 + supportingLegIndex;
         return hash;
     }
 
     @Override
-    public Object clone() {
-        RobotAction cloned = new RobotAction(tibRotation.size());
-        cloned.tibRotation = (ArrayList<Integer>) tibRotation.clone();
-        cloned.footRotation = (ArrayList<Integer>) footRotation.clone();
-        cloned.supportingLegIndex = supportingLegIndex;
-        return cloned;
+    public Object copy() {
+        RobotAction copied = new RobotAction(tibRotation.size());
+        copied.tibRotation = (ArrayList<Integer>) tibRotation.clone();
+        copied.footRotation = (ArrayList<Integer>) footRotation.clone();
+        copied.supportingLegIndex = supportingLegIndex;
+        return copied;
     }
 }

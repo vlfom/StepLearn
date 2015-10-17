@@ -1,20 +1,17 @@
 package com.vlfom.steplearn.robot;
 
-import com.vlfom.steplearn.exceptions.HitObjectException;
-import com.vlfom.steplearn.exceptions.RobotFallException;
+import com.vlfom.steplearn.util.Copyable;
 
-import java.awt.geom.Line2D;
-import java.awt.geom.Point2D;
 import java.util.ArrayList;
 
-public class Robot implements Cloneable {
+public class Robot implements Copyable {
     public int weight;
     public Body body;
 
-    private Leg supportingLeg;
-    private int supportingLegIndex;
+    public Leg supportingLeg;
+    public int supportingLegIndex;
 
-    private ArrayList<Leg> legs;
+    public ArrayList<Leg> legs;
 
     public Robot(Body body) {
         legs = new ArrayList<>();
@@ -22,13 +19,13 @@ public class Robot implements Cloneable {
         this.weight = body.weight;
     }
 
+    public Leg getSupportingLeg() {
+        return supportingLeg;
+    }
+
     public void setSupportingLeg(int id) {
         supportingLeg = legs.get(id);
         supportingLegIndex = id;
-    }
-
-    public Leg getSupportingLeg() {
-        return supportingLeg;
     }
 
     public int getSupportingLegIndex() {
@@ -49,13 +46,14 @@ public class Robot implements Cloneable {
     }
 
     @Override
-    public Object clone() {
-        Robot cloned = new Robot((Body) body.clone());
+    public Object copy() {
+        Robot cloned = new Robot((Body) body.copy());
         cloned.supportingLegIndex = supportingLegIndex;
-        cloned.supportingLeg = (Leg) supportingLeg.clone();
+        cloned.supportingLeg = (Leg) supportingLeg.copy();
         cloned.legs = new ArrayList<>();
-        for(Leg leg:legs)
-            cloned.legs.add((Leg) leg.clone());
+        for (Leg leg : legs) {
+            cloned.legs.add((Leg) leg.copy());
+        }
         return cloned;
     }
 }

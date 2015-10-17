@@ -4,12 +4,13 @@ import com.vlfom.steplearn.exceptions.HitObjectException;
 import com.vlfom.steplearn.exceptions.RobotFallException;
 import com.vlfom.steplearn.robot.Leg;
 import com.vlfom.steplearn.robot.Robot;
+import com.vlfom.steplearn.util.Copyable;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
-public class RobotPicture implements Cloneable {
+public class RobotPicture implements Copyable {
     public Robot robot;
     public Line2D.Double ground;
     public Point2D.Double bodyCoords;
@@ -18,6 +19,14 @@ public class RobotPicture implements Cloneable {
         bodyCoords = new Point2D.Double();
         this.robot = robot;
         this.ground = ground;
+    }
+
+    public void initialize() {
+        Leg leg = robot.getSupportingLeg();
+        bodyCoords.x = leg.foot.x - leg.tib.length * Math.cos(Math.toRadians
+                (180 - leg.foot.angle));
+        bodyCoords.y = robot.body.height / 2.0 + leg.tib.length * Math.sin
+                (Math.toRadians(180 - leg.foot.angle));
     }
 
     public Rectangle2D.Double getBodyCoords() {
@@ -54,8 +63,9 @@ public class RobotPicture implements Cloneable {
             RobotFallException {
         Leg leg = robot.getSupportingLeg();
 
-        if (leg.tib.angle + leg.foot.angle != 180)
+        if (leg.tib.angle + leg.foot.angle != 180) {
             throw new RobotFallException("");
+        }
 
         leg.tib.angle += degTib;
         leg.foot.angle += degFoot;
@@ -84,8 +94,8 @@ public class RobotPicture implements Cloneable {
         Line2D.Double footCoords = getFootCoords(id);
         Line2D.Double bodyBottom = new Line2D.Double(bodyCoords.x - robot
                 .body.width / 2.0, bodyCoords.y - robot.body.height / 2.0 +
-                2, bodyCoords.x + robot.body.width / 2.0, bodyCoords.y -
-                robot.body.height / 2.0 + 2);
+                1, bodyCoords.x + robot.body.width / 2.0, bodyCoords.y -
+                robot.body.height / 2.0 + 1);
         if (tibCoords.intersectsLine(ground) ||
                 tibCoords.intersectsLine(bodyBottom) ||
                 footCoords.intersectsLine(ground) ||
@@ -100,10 +110,10 @@ public class RobotPicture implements Cloneable {
     }
 
     @Override
-    public Object clone() {
-        RobotPicture cloned = new RobotPicture((Robot) robot.clone(), (Line2D
+    public Object copy() {
+        RobotPicture copied = new RobotPicture((Robot) robot.copy(), (Line2D
                 .Double) ground.clone());
-        cloned.bodyCoords = (Point2D.Double) bodyCoords.clone();
-        return cloned;
+        copied.bodyCoords = (Point2D.Double) bodyCoords.clone();
+        return copied;
     }
 }

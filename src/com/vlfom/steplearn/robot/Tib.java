@@ -1,6 +1,6 @@
 package com.vlfom.steplearn.robot;
 
-public class Tib extends BodyPart implements Cloneable {
+public class Tib extends BodyPart {
     public int length;
     public int angle;
 
@@ -11,7 +11,7 @@ public class Tib extends BodyPart implements Cloneable {
     }
 
     @Override
-    protected Object clone() {
+    public Object copy() {
         return new Tib(length, angle, weight);
     }
 }

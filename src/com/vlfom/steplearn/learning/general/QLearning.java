@@ -1,9 +1,6 @@
 package com.vlfom.steplearn.learning.general;
 
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Random;
-import java.util.TreeMap;
+import java.util.*;
 
 public class QLearning {
     public TreeMap<Long, TreeMap<Long, Double>> q;
@@ -27,21 +24,23 @@ public class QLearning {
             return null;
         }
 
-        if( !learning )
+        if (!learning) {
             System.out.println(action);
+        }
 
-        State next = action.applyAction(state);
+        State next = mdp.applyAction(state, action);
 
-        if( learning )
+        if (learning) {
             update(state, action, next);
+        }
 
         return next;
     }
 
     private void populateState(State state) {
-        ArrayList<Action> actions = mdp.getActionsList(state);
+        ArrayList<Action> actions = mdp.getActionsList(state, true);
         for (Action action : actions) {
-            State next = action.applyAction(state);
+            State next = mdp.applyAction(state, action);
             update(state, action, next);
         }
     }
@@ -62,12 +61,12 @@ public class QLearning {
     }
 
     private Action chooseNext(State s, boolean learning) {
-        ArrayList<Action> actions = mdp.getActionsList(s);
-        Long bestHash = argMax(s);
-        if (bestHash != null && (random.nextDouble() > mdp.observationP ||
+        Long argMax = argMax(s);
+        if (argMax != null && (random.nextDouble() > mdp.observationP ||
                 !learning)) {
-            return mdp.getAction(s, bestHash);
+            return mdp.getAction(s, argMax);
         }
+        ArrayList<Action> actions = mdp.getActionsList(s, learning);
         if (actions.size() > 0) {
             return actions.get(random.nextInt(actions.size()));
         }

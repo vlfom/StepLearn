@@ -1,6 +1,6 @@
 package com.vlfom.steplearn.robot;
 
-public class Leg extends BodyPart implements Cloneable {
+public class Leg extends BodyPart {
     public Tib tib;
     public Foot foot;
 
@@ -11,7 +11,7 @@ public class Leg extends BodyPart implements Cloneable {
     }
 
     @Override
-    protected Object clone() {
-        return new Leg((Tib) tib.clone(), (Foot) foot.clone());
+    public Object copy() {
+        return new Leg((Tib) tib.copy(), (Foot) foot.copy());
     }
 }
