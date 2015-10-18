@@ -1,17 +1,20 @@
 package com.vlfom.steplearn.robot;
 
 public class Leg extends BodyPart {
-    public Tib tib;
+    public Thigh thigh;
+    public Shin shin;
     public Foot foot;
 
-    public Leg(Tib tib, Foot foot) {
-        this.tib = tib;
+    public Leg(Thigh thigh, Shin shin, Foot foot) {
+        this.thigh = thigh;
+        this.shin = shin;
         this.foot = foot;
-        this.weight = tib.weight + foot.weight;
+        this.weight = shin.weight + foot.weight;
     }
 
     @Override
     public Object copy() {
-        return new Leg((Tib) tib.copy(), (Foot) foot.copy());
+        return new Leg((Thigh) thigh.copy(), (Shin) shin.copy(), (Foot) foot
+                .copy());
     }
 }

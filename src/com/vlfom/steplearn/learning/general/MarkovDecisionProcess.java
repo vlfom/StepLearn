@@ -1,5 +1,7 @@
 package com.vlfom.steplearn.learning.general;
 
+import com.vlfom.steplearn.util.Utils;
+
 import java.util.ArrayList;
 
 public abstract class MarkovDecisionProcess {
@@ -7,7 +9,7 @@ public abstract class MarkovDecisionProcess {
     public double discountF = 0.7;
     public double observationP = 0.5;
 
-    public abstract ArrayList<Action> getActionsList(State s, boolean learning);
+    public abstract ArrayList<Utils.Pair> getActionsList(State s, boolean learning);
 
     public abstract Action getAction(State state, Long hash);
 

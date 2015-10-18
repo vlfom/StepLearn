@@ -7,6 +7,7 @@ import com.vlfom.steplearn.learning.robot.RobotMarkovDecisionProcess;
 import com.vlfom.steplearn.learning.robot.RobotState;
 import com.vlfom.steplearn.robot.*;
 import com.vlfom.steplearn.robot.Robot;
+import com.vlfom.steplearn.util.Utils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,6 +15,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.util.ArrayList;
 
@@ -21,7 +23,6 @@ public class MainBeta extends JPanel implements ActionListener {
     public RobotState start, state;
     Timer timer;
     RobotMarkovDecisionProcess mdp;
-    RobotAction lastAction;
     QLearning qLearning;
 
     public MainBeta() {
@@ -32,8 +33,10 @@ public class MainBeta extends JPanel implements ActionListener {
         timer.start();
 
         Robot robot = new Robot(new Body(50, 100, 5));
-        robot.addLeg(new Leg(new Tib(100, 90, 2), new Foot(5, 200, 90, 1)));
-        robot.addLeg(new Leg(new Tib(100, 90, 2), new Foot(5, 200, 90, 1)));
+        robot.addLeg(new Leg(new Thigh(50, 90, 2), new Shin(50, 180, 2), new
+                Foot(5, 200, 90, 1)));
+        robot.addLeg(new Leg(new Thigh(50, 90, 2), new Shin(50, 180, 2), new
+                Foot(5, 200, 90, 1)));
         robot.setSupportingLeg(0);
         RobotPicture robotPicture = new RobotPicture(robot, new Line2D.Double
                 (0, -1, 700, -1));
@@ -42,19 +45,19 @@ public class MainBeta extends JPanel implements ActionListener {
         mdp = new RobotMarkovDecisionProcess(robotPicture);
         qLearning = new QLearning(mdp);
 
-        ArrayList<Integer> tibAngle = new ArrayList<>(robot.getLegsCount());
-        ArrayList<Integer> footAngle = new ArrayList<>(robot.getLegsCount());
+        ArrayList<Integer> thighAngle = new ArrayList<>(robot.getLegsCount());
+        ArrayList<Integer> shinAngle = new ArrayList<>(robot.getLegsCount());
         ArrayList<Double> footCoords = new ArrayList<>(robot.getLegsCount());
         for (int i = 0; i < robot.getLegsCount(); ++i) {
-            tibAngle.add(robotPicture.robot.getLeg(i).tib.angle);
-            footAngle.add(robotPicture.robot.getLeg(i).foot.angle);
+            thighAngle.add(robotPicture.robot.getLeg(i).thigh.angle);
+            shinAngle.add(robotPicture.robot.getLeg(i).shin.angle);
             footCoords.add(robotPicture.robot.getLeg(i).foot.x);
         }
         start = new RobotState(robot.body.x, robot.getLegsCount(), robot
-                .supportingLegIndex, tibAngle, footAngle, footCoords);
+                .supportingLegIndex, thighAngle, shinAngle, footCoords);
 
-        int repeatsNumber = 1000;
-        int repeatDepth = 1000;
+        int repeatsNumber = 10000;
+        int repeatDepth = 10000;
         for (int i = 0; i < repeatsNumber; ++i) {
             if (i % (repeatsNumber / 100) == 0) {
                 System.out.print(i / (repeatsNumber / 100) + "%, ");
@@ -85,7 +88,7 @@ public class MainBeta extends JPanel implements ActionListener {
     }
 
     public void render(Graphics2D g2) {
-        g2.setColor(Color.BLUE);
+        g2.setColor(Color.BLACK);
         g2.setStroke(new BasicStroke(2));
         g2.translate(0, 2 * 700 - 800);
         g2.scale(1, -1);
@@ -94,12 +97,20 @@ public class MainBeta extends JPanel implements ActionListener {
 
         g2.draw(robotPicture.getBodyCoords());
 
-        Color colors[] = {Color.RED, Color.BLUE, Color.GREEN};
+        Color colors[] = {Color.DARK_GRAY, Color.GRAY, Color.GREEN};
 
+        Line2D.Double thigh, shin, foot;
         for (int i = 0; i < robotPicture.robot.getLegsCount(); ++i) {
             g2.setColor(colors[i]);
-            g2.draw(robotPicture.getTibCoords(i));
-            g2.draw(robotPicture.getFootCoords(i));
+            thigh = robotPicture.getThighCoords(i);
+            shin = robotPicture.getShinCoords(i);
+            foot = robotPicture.getFootCoords(i);
+            g2.draw(new Ellipse2D.Double(thigh.x1-2, thigh.y1-2, 4, 4));
+            g2.draw(new Ellipse2D.Double(shin.x1-2, shin.y1-2, 4, 4));
+            g2.draw(new Ellipse2D.Double(shin.x2-2, shin.y2-2, 4, 4));
+            g2.draw(thigh);
+            g2.draw(shin);
+            g2.draw(foot);
         }
         g2.setColor(Color.BLACK);
         g2.draw(new Line2D.Double(robotPicture.ground.x1, robotPicture.ground
@@ -120,8 +131,7 @@ public class MainBeta extends JPanel implements ActionListener {
         g2.setRenderingHints(rh);
 
         System.out.println(state);
-
-        //outputAllPossibleActions(state);
+        outputAllPossibleActions(state);
 
         state = (RobotState) qLearning.iterate(state, false);
         if (state == null) {
@@ -136,10 +146,8 @@ public class MainBeta extends JPanel implements ActionListener {
 
     void applyUserAction() {
         RobotAction robotAction = new RobotAction(2);
-        robotAction.tibRotation.set(0, 1);
-        robotAction.footRotation.set(0, -1);
-        robotAction.tibRotation.set(1, 1);
-        robotAction.footRotation.set(1, -1);
+        robotAction.shinRotation.set(0, 1);
+        robotAction.shinRotation.set(1, 1);
         robotAction.supportingLegIndex = 0;
         System.out.println(mdp.applyAction(state, robotAction));
 
@@ -157,10 +165,11 @@ public class MainBeta extends JPanel implements ActionListener {
     }
 
     void outputAllPossibleActions(RobotState state) {
-        for (com.vlfom.steplearn.learning.general.Action action : mdp
-                .getActionsList(state, false)) {
-            System.out.println(action + " " + qLearning.q.get(state.hash())
-                    .get(action.hash()));
+        System.out.println("Actions list1:");
+        for (Utils.Pair pair : mdp.getActionsList(state, false)) {
+            System.out.println(pair.first + " " + qLearning.q.get(state.hash
+                    ()).get(((com.vlfom.steplearn.learning.general.Action)
+                    (pair.first)).hash()));
         }
     }
 

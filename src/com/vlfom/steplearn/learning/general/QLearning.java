@@ -1,6 +1,11 @@
 package com.vlfom.steplearn.learning.general;
 
-import java.util.*;
+import com.vlfom.steplearn.util.Utils;
+
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Random;
+import java.util.TreeMap;
 
 public class QLearning {
     public TreeMap<Long, TreeMap<Long, Double>> q;
@@ -25,7 +30,7 @@ public class QLearning {
         }
 
         if (!learning) {
-            System.out.println(action);
+            System.out.println("CHOOSED ACTION: " + action);
         }
 
         State next = mdp.applyAction(state, action);
@@ -38,10 +43,9 @@ public class QLearning {
     }
 
     private void populateState(State state) {
-        ArrayList<Action> actions = mdp.getActionsList(state, true);
-        for (Action action : actions) {
-            State next = mdp.applyAction(state, action);
-            update(state, action, next);
+        ArrayList<Utils.Pair> actions = mdp.getActionsList(state, true);
+        for (Utils.Pair pair : actions) {
+            update(state, (Action) pair.first, (State) pair.second);
         }
     }
 
@@ -61,14 +65,14 @@ public class QLearning {
     }
 
     private Action chooseNext(State s, boolean learning) {
-        Long argMax = argMax(s);
+        Long argMax = argMax(s, learning);
         if (argMax != null && (random.nextDouble() > mdp.observationP ||
                 !learning)) {
             return mdp.getAction(s, argMax);
         }
-        ArrayList<Action> actions = mdp.getActionsList(s, learning);
+        ArrayList<Utils.Pair> actions = mdp.getActionsList(s, learning);
         if (actions.size() > 0) {
-            return actions.get(random.nextInt(actions.size()));
+            return (Action) actions.get(random.nextInt(actions.size())).first;
         }
         return null;
     }
@@ -84,12 +88,20 @@ public class QLearning {
         return maxValue;
     }
 
-    private Long argMax(State s) {
+    private Long argMax(State s, boolean learning) {
         Long sHash = s.hash();
         if (!q.containsKey(sHash)) {
             return null;
         }
         TreeMap<Long, Double> actions = q.get(sHash);
+        if( !learning ) {
+            System.out.println(s);
+            System.out.println("Actions list2:");
+            for (Map.Entry<Long, Double> entry : actions.entrySet()) {
+                System.out.println(mdp.getAction(s,entry.getKey()) + " " +
+                        entry.getValue());
+            }
+        }
         Long bestAction = actions.firstKey();
         Double maxValue = actions.firstEntry().getValue();
         for (Map.Entry<Long, Double> entry : actions.entrySet()) {

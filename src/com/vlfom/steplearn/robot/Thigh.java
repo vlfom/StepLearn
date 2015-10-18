@@ -1,10 +1,10 @@
 package com.vlfom.steplearn.robot;
 
-public class Tib extends BodyPart {
+public class Thigh extends BodyPart {
     public int length;
     public int angle;
 
-    public Tib(int length, int angle, int weight) {
+    public Thigh(int length, int angle, int weight) {
         this.length = length;
         this.angle = angle;
         this.weight = weight;
@@ -12,6 +12,6 @@ public class Tib extends BodyPart {
 
     @Override
     public Object copy() {
-        return new Tib(length, angle, weight);
+        return new Thigh(length, angle, weight);
     }
 }
