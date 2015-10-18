@@ -18,38 +18,28 @@ public class QLearning {
         random = new Random();
     }
 
-    public State iterate(State state, boolean learning) {
-        if (learning && !q.containsKey(state.hash())) {
+    public State iterateLearning(State state) {
+        if (!q.containsKey(state.hash())) {
             populateState(state);
         }
 
-        Action action = chooseNext(state, learning);
-
-        if (action == null) {
-            return null;
-        }
-
-        if (!learning) {
-            System.out.println("CHOOSED ACTION: " + action);
-        }
+        Action action = chooseNext(state);
 
         State next = mdp.applyAction(state, action);
 
-        if (learning) {
-            update(state, action, next);
-        }
+        update(state, action, next);
 
         return next;
     }
 
     private void populateState(State state) {
-        ArrayList<Utils.Pair> actions = mdp.getActionsList(state, true);
+        ArrayList<Utils.Pair> actions = mdp.getActionsList(state);
         for (Utils.Pair pair : actions) {
             update(state, (Action) pair.first, (State) pair.second);
         }
     }
 
-    public void update(State s, Action a, State n) {
+    private void update(State s, Action a, State n) {
         long sHash = s.hash();
         if (!q.containsKey(sHash)) {
             q.put(sHash, new TreeMap<Long, Double>());
@@ -61,16 +51,16 @@ public class QLearning {
         }
         Double prev = actions.get(aHash);
         actions.put(aHash, (1 - mdp.learningF) * prev + mdp.learningF * (mdp
-                .reward(s, n) + mdp.discountF * valMax(s)));
+                .reward(s, a, n) + mdp.discountF * valMax(s)));
     }
 
-    private Action chooseNext(State s, boolean learning) {
-        Long argMax = argMax(s, learning);
-        if (argMax != null && (random.nextDouble() > mdp.observationP ||
-                !learning)) {
-            return mdp.getAction(s, argMax);
+    private Action chooseNext(State s) {
+        Action argMax = argMax(s);
+        if (argMax != null && random.nextDouble() > mdp.observationP) {
+            return argMax;
         }
-        ArrayList<Utils.Pair> actions = mdp.getActionsList(s, learning);
+        ArrayList<Utils.Pair> actions = mdp.getActionsList(s);
+
         if (actions.size() > 0) {
             return (Action) actions.get(random.nextInt(actions.size())).first;
         }
@@ -88,20 +78,13 @@ public class QLearning {
         return maxValue;
     }
 
-    private Long argMax(State s, boolean learning) {
+    public Action argMax(State s) {
         Long sHash = s.hash();
         if (!q.containsKey(sHash)) {
             return null;
         }
         TreeMap<Long, Double> actions = q.get(sHash);
-        if( !learning ) {
-            System.out.println(s);
-            System.out.println("Actions list2:");
-            for (Map.Entry<Long, Double> entry : actions.entrySet()) {
-                System.out.println(mdp.getAction(s,entry.getKey()) + " " +
-                        entry.getValue());
-            }
-        }
+
         Long bestAction = actions.firstKey();
         Double maxValue = actions.firstEntry().getValue();
         for (Map.Entry<Long, Double> entry : actions.entrySet()) {
@@ -109,7 +92,33 @@ public class QLearning {
                 maxValue = entry.getValue();
                 bestAction = entry.getKey();
             }
+            else if(entry.getValue().equals(maxValue) && Math.random() < 0.5) {
+                maxValue = entry.getValue();
+                bestAction = entry.getKey();
+            }
         }
-        return bestAction;
+        return mdp.getAction(s, bestAction);
+    }
+
+    public Action argMax2(State s) {
+        Long sHash = s.hash();
+        if (!q.containsKey(sHash)) {
+            return null;
+        }
+        TreeMap<Long, Double> actions = q.get(sHash);
+
+        Long bestAction = actions.firstKey();
+        Double maxValue = actions.firstEntry().getValue();
+        for (Map.Entry<Long, Double> entry : actions.entrySet()) {
+            if (entry.getValue() > maxValue) {
+                maxValue = entry.getValue();
+                bestAction = entry.getKey();
+            }
+            else if(entry.getValue().equals(maxValue) && Math.random() < 0.5) {
+                maxValue = entry.getValue();
+                bestAction = entry.getKey();
+            }
+        }
+        return mdp.getAction(s, bestAction);
     }
 }

@@ -9,11 +9,11 @@ public abstract class MarkovDecisionProcess {
     public double discountF = 0.7;
     public double observationP = 0.5;
 
-    public abstract ArrayList<Utils.Pair> getActionsList(State s, boolean learning);
+    public abstract ArrayList<Utils.Pair> getActionsList(State s);
 
     public abstract Action getAction(State state, Long hash);
 
-    public abstract double reward(State s, State n);
+    public abstract double reward(State s, Action a, State n);
 
     public abstract State applyAction(State state, Action action);
 }

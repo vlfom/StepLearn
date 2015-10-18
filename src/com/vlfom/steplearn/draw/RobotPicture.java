@@ -21,7 +21,7 @@ public class RobotPicture implements Copyable {
         this.ground = ground;
     }
 
-    public void initialize() {
+    public void initialize() throws HitObjectException {
         Leg leg = robot.getSupportingLeg();
 
         double angle1 = Math.toRadians(leg.thigh.angle);
@@ -31,6 +31,32 @@ public class RobotPicture implements Copyable {
                 .thigh.length * Math.cos(angle1);
         bodyCoords.y = robot.body.height / 2.0 + leg.shin.length * Math.sin
                 (angle2) + leg.thigh.length * Math.sin(angle1);
+
+        Line2D.Double thighCoords;
+        Line2D.Double shinCoords;
+        Line2D.Double footCoords;
+        Line2D.Double bodyBottom = new Line2D.Double(bodyCoords.x - robot
+                .body.width / 2.0, bodyCoords.y - robot.body.height / 2.0 +
+                1, bodyCoords.x + robot.body.width / 2.0, bodyCoords.y -
+                robot.body.height / 2.0 + 1);
+
+        for(int i = 0 ; i < robot.getLegsCount(); ++i) {
+            thighCoords = getThighCoords(i);
+            shinCoords = getShinCoords(i);
+            footCoords = getFootCoords(i);
+
+            if (leg.shin.angle < 0 || leg.shin.angle > 180 ||
+                    leg.foot.angle < 0 || leg.foot.angle > 180 ||
+                    leg.thigh.angle < 0 || leg.thigh.angle > 180 ||
+                    thighCoords.intersectsLine(ground) ||
+                    thighCoords.intersectsLine(bodyBottom) ||
+                    shinCoords.intersectsLine(ground) ||
+                    shinCoords.intersectsLine(bodyBottom) ||
+                    footCoords.intersectsLine(ground) ||
+                    footCoords.intersectsLine(bodyBottom)) {
+                throw new HitObjectException("");
+            }
+        }
     }
 
     public Rectangle2D.Double getBodyCoords() {

@@ -37,43 +37,13 @@ public class RobotMarkovDecisionProcess extends MarkovDecisionProcess {
     }
 
     @Override
-    public double reward(State s, State n) {
-        if (n == null) {
+    public double reward(State s, Action a, State n) {
+        if (a == null || n == null) {
             return -1e9;
         }
 
-        return (((RobotState) n).bodyX - ((RobotState) s).bodyX) * 1000;
-    }
-
-    public RobotPicture getSpecificRobotPicture(RobotState s) {
-        robotPicture.robot.setSupportingLeg(s.supportingLegIndex);
-        for (int i = 0; i < s.legsCount; ++i) {
-            robotPicture.robot.legs.get(i).thigh.angle = s.thighAngle.get(i);
-            robotPicture.robot.legs.get(i).shin.angle = s.shinAngle.get(i);
-            robotPicture.robot.legs.get(i).foot.angle = s.shinAngle.get(i) -
-                    s.thighAngle.get(i);
-            robotPicture.robot.legs.get(i).foot.x = s.footCoords.get(i);
-        }
-        robotPicture.initialize();
-        return robotPicture;
-    }
-
-    @Override
-    public State applyAction(State s, Action a) {
         RobotState rs = (RobotState) s;
         RobotAction ra = (RobotAction) a;
-
-        for(int i = 0 ; i < rs.legsCount; ++i)
-            if(rs.thighAngle.get(i) + ra.thighRotation.get(i) < 70 ||
-                    rs.thighAngle.get(i) + ra.thighRotation.get(i) > 130 ||
-                    rs.shinAngle.get(i) + ra.shinRotation.get(i) < 150 ||
-                    (rs.supportingLegIndex != ra.supportingLegIndex && Math
-                            .abs(rs.thighAngle.get(rs.supportingLegIndex)-rs
-                                    .thighAngle.get(ra.supportingLegIndex)) <
-                            30 ) ||
-                    rs.shinAngle.get(ra.supportingLegIndex) + ra.shinRotation
-                            .get(ra.supportingLegIndex) != 180)
-                return null;
 
         robotPicture.robot.setSupportingLeg(ra.supportingLegIndex);
         for (int i = 0; i < rs.legsCount; ++i) {
@@ -81,9 +51,69 @@ public class RobotMarkovDecisionProcess extends MarkovDecisionProcess {
             robotPicture.robot.legs.get(i).shin.angle = rs.shinAngle.get(i);
             robotPicture.robot.legs.get(i).foot.angle = rs.shinAngle.get(i) -
                     rs.thighAngle.get(i);
-            robotPicture.robot.legs.get(i).foot.x = rs.footCoords.get(i);
+            robotPicture.robot.legs.get(i).foot.x = 0;
         }
-        robotPicture.initialize();
+        try {
+            robotPicture.initialize();
+        } catch (HitObjectException e) {
+            return -1e9;
+        }
+
+        double bodyX = robotPicture.bodyCoords.x;
+
+        try {
+            robotPicture.rotateSupportingLeg(ra.thighRotation.get(ra
+                    .supportingLegIndex), ra.shinRotation.get(ra
+                    .supportingLegIndex), ra.shinRotation.get(ra
+                    .supportingLegIndex) - ra.thighRotation.get(ra
+                    .supportingLegIndex));
+            for (int i = 0; i < robotPicture.robot.getLegsCount(); ++i) {
+                if (i != ra.supportingLegIndex) {
+                        robotPicture.rotateRegularLeg(i, ra.thighRotation.get(i),
+                                ra.shinRotation.get(i), ra.shinRotation.get(i) -
+                                        ra.thighRotation.get(i));
+                }
+            }
+        } catch (Exception e) {
+            return -1e9;
+        }
+
+        return (robotPicture.bodyCoords.x - bodyX) * 10000;
+    }
+
+    @Override
+    public State applyAction(State s, Action a) {
+        if( s == null || a == null )
+            return null;
+
+        RobotState rs = (RobotState) s;
+        RobotAction ra = (RobotAction) a;
+
+        for(int i = 0 ; i < rs.legsCount; ++i)
+            if(rs.thighAngle.get(i) + ra.thighRotation.get(i) < 10 ||
+                    rs.thighAngle.get(i) + ra.thighRotation.get(i) > 170 ||
+                    rs.shinAngle.get(i) + ra.shinRotation.get(i) < 10 ||
+                    rs.shinAngle.get(i) + ra.shinRotation.get(i) > 180 ||
+                    (rs.supportingLegIndex != ra.supportingLegIndex && Math
+                            .abs(rs.thighAngle.get(rs.supportingLegIndex) -
+                                 rs.thighAngle.get(ra.supportingLegIndex)) <
+                            30 )) {
+                return null;
+            }
+
+        for (int i = 0; i < rs.legsCount; ++i) {
+            robotPicture.robot.legs.get(i).thigh.angle = rs.thighAngle.get(i);
+            robotPicture.robot.legs.get(i).shin.angle = rs.shinAngle.get(i);
+            robotPicture.robot.legs.get(i).foot.angle = rs.shinAngle.get(i) -
+                    rs.thighAngle.get(i);
+            robotPicture.robot.legs.get(i).foot.x = 350;
+        }
+        robotPicture.robot.setSupportingLeg(ra.supportingLegIndex);
+        try {
+            robotPicture.initialize();
+        } catch (HitObjectException e) {
+            return null;
+        }
 
         try {
             robotPicture.rotateSupportingLeg(ra.thighRotation.get(ra
@@ -92,7 +122,6 @@ public class RobotMarkovDecisionProcess extends MarkovDecisionProcess {
                     .supportingLegIndex) - ra.thighRotation.get(ra
                     .supportingLegIndex));
         } catch (RobotFallException e) {
-            if(ra.shinRotation.get(ra.supportingLegIndex) == 0)
             return null;
         }
 
@@ -108,22 +137,26 @@ public class RobotMarkovDecisionProcess extends MarkovDecisionProcess {
             }
         }
 
+        try {
+            robotPicture.initialize();
+        } catch (HitObjectException e) {
+            return null;
+        }
+
         RobotState ns = new RobotState(rs.legsCount);
         ns.supportingLegIndex = ra.supportingLegIndex;
         ns.legsCount = rs.legsCount;
-        ns.bodyX = robotPicture.bodyCoords.x;
 
         for (int i = 0; i < rs.legsCount; ++i) {
             ns.thighAngle.set(i, robotPicture.robot.getLeg(i).thigh.angle);
             ns.shinAngle.set(i, robotPicture.robot.getLeg(i).shin.angle);
-            ns.footCoords.set(i, robotPicture.robot.getLeg(i).foot.x);
         }
 
         return ns;
     }
 
     @Override
-    public ArrayList<Utils.Pair> getActionsList(State s, boolean learning) {
+    public ArrayList<Utils.Pair> getActionsList(State s) {
         ArrayList<Utils.Pair> robotActions = new ArrayList<>();
         RobotAction robotAction = new RobotAction();
         RobotState rs = (RobotState) s;
@@ -143,10 +176,8 @@ public class RobotMarkovDecisionProcess extends MarkovDecisionProcess {
                             robotAction.shinRotation.set(0, j0 * angle);
                             robotAction.thighRotation.set(1, i1 * angle);
                             robotAction.shinRotation.set(1, j1 * angle);
-                            for (int k = 0; k < robotPicture.robot.getLegsCount(); ++k)
-                                if (!(
-                                        (k == 0 && i1 > 0 && j1 < 0) ||
-                                        (k == 1 && i0 > 0 && j0 < 0) )) {
+                            for (int k = 0; k < robotPicture.robot
+                                    .getLegsCount(); ++k) {
                                     robotAction.supportingLegIndex = k;
                                     State n = applyAction(rs, robotAction);
                                     if (n != null) {
