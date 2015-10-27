@@ -1,6 +1,7 @@
 package com.vlfom.steplearn.core.learning.robot;
 
 import com.vlfom.steplearn.core.learning.general.State;
+import com.vlfom.steplearn.core.robot.Robot;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,6 +14,17 @@ public class RobotState extends State {
     public RobotState(int legsCount) {
         this.thighAngle = new ArrayList<>(Collections.nCopies(legsCount, 0));
         this.shinAngle = new ArrayList<>(Collections.nCopies(legsCount, 0));
+    }
+
+    public RobotState(Robot robot) {
+        this.legsCount = robot.getLegsCount();
+        this.supportingLegIndex = robot.supportingLegIndex;
+        this.thighAngle = new ArrayList<>(robot.getLegsCount());
+        this.shinAngle = new ArrayList<>(robot.getLegsCount());
+        for (int i = 0; i < robot.getLegsCount(); ++i) {
+            thighAngle.add(robot.getLeg(i).thigh.angle);
+            shinAngle.add(robot.getLeg(i).shin.angle);
+        }
     }
 
     public RobotState(int legsCount, int supportingLegIndex,

@@ -1,16 +1,15 @@
 package com.vlfom.steplearn.visualisation;
 
-import com.vlfom.steplearn.core.robot.draw.RobotProjection;
-import com.vlfom.steplearn.core.robot.exceptions.HitObjectException;
-import com.vlfom.steplearn.core.robot.exceptions.RobotFallException;
 import com.vlfom.steplearn.core.learning.general.MarkovDecisionProcess;
 import com.vlfom.steplearn.core.learning.general.QLearning;
 import com.vlfom.steplearn.core.learning.robot.RobotAction;
-import com.vlfom.steplearn.core.learning.robot.RobotMarkovDecisionProcess;
 import com.vlfom.steplearn.core.learning.robot.RobotState;
-import com.vlfom.steplearn.core.robot.Robot;
-import com.vlfom.steplearn.core.util.Utils;
+import com.vlfom.steplearn.core.robot.RobotProjection;
+import com.vlfom.steplearn.core.robot.exceptions.HitObjectException;
+import com.vlfom.steplearn.core.robot.exceptions.RobotFallException;
 import com.vlfom.steplearn.spring.config.RobotConfiguration;
+import com.vlfom.steplearn.spring.config.learning.QLearningComponent;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation
         .AnnotationConfigApplicationContext;
 
@@ -22,78 +21,59 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
-import java.util.ArrayList;
 
 public class MainBeta extends JPanel implements ActionListener {
-    public RobotState start, state;
-    Timer timer;
-    MarkovDecisionProcess mdp;
-    QLearning qLearning;
-    RobotProjection robotProjection, startRobotProjection;
+    private ApplicationContext appContext;
+    private RobotState curState;
+    private RobotProjection curRobotProjection;
 
     public MainBeta() {
         this.addKeyListener(new MyKeyListener());
 
-        timer = new Timer(50, this);
+        Timer timer = new Timer(50, this);
         timer.setInitialDelay(190);
         timer.start();
 
-        //ClassPathXmlApplicationContext context = new
-        //        ClassPathXmlApplicationContext("robot-config.xml");
-
-        AnnotationConfigApplicationContext context = new
-                AnnotationConfigApplicationContext(
+//        ApplicationContext context2 = new
+//                ClassPathXmlApplicationContext("robot-config.xml");
+        appContext = new AnnotationConfigApplicationContext(
                 RobotConfiguration.class);
 
-        Robot robot = (Robot) context.getBean("robot");
+        RobotState startState = (RobotState) appContext.getBean("robotState");
 
-        startRobotProjection = new RobotProjection(robot,
-                new Line2D.Double(0, -1, 700, -1));
-        try {
-            startRobotProjection.reInitialize();
-        } catch (HitObjectException ignored) {
-        }
-
-        mdp = new RobotMarkovDecisionProcess(
-                (RobotProjection) startRobotProjection.copy());
-        qLearning = new QLearning(mdp);
-
-        ArrayList<Integer> thighAngle = new ArrayList<>(robot.getLegsCount());
-        ArrayList<Integer> shinAngle = new ArrayList<>(robot.getLegsCount());
-        for (int i = 0; i < robot.getLegsCount(); ++i) {
-            thighAngle.add(robot.getLeg(i).thigh.angle);
-            shinAngle.add(robot.getLeg(i).shin.angle);
-        }
-        start = new RobotState(robot.getLegsCount(), robot.supportingLegIndex,
-                thighAngle, shinAngle);
-
+        QLearning qLearning = (QLearning) appContext.getBean("qLearning");
         int repeatsNumber = 100;
         int repeatDepth = 100;
         for (int i = 0; i < repeatsNumber; ++i) {
             if (i % (repeatsNumber / 100) == 0) {
                 System.out.print(i / (repeatsNumber / 100) + "%, ");
             }
-            state = (RobotState) start.copy();
+            curState = (RobotState) startState.copy();
             for (int j = 0; j < repeatDepth; ++j) {
-                state = (RobotState) qLearning.iterateLearning(state);
-                if (state == null) {
-                    break;
-                }
-            }
-        }
-        mdp.observationP = 0;
-        for (int i = 0; i < 10; ++i) {
-            state = (RobotState) start.copy();
-            for (int j = 0; j < 1000; ++j) {
-                state = (RobotState) qLearning.iterateLearning(state);
-                if (state == null) {
+                curState = (RobotState) qLearning.iterateLearning(curState);
+                if (curState == null) {
                     break;
                 }
             }
         }
 
-        state = (RobotState) start.copy();
-        robotProjection = (RobotProjection) startRobotProjection.copy();
+        MarkovDecisionProcess markovDecisionProcess = (MarkovDecisionProcess)
+                appContext
+                .getBean("markovDecisionProcess");
+        markovDecisionProcess.observationP = 0;
+        for (int i = 0; i < 10; ++i) {
+            curState = (RobotState) startState.copy();
+            for (int j = 0; j < 1000; ++j) {
+                curState = (RobotState) qLearning.iterateLearning(curState);
+                if (curState == null) {
+                    break;
+                }
+            }
+        }
+
+        curState = (RobotState) startState.copy();
+        curRobotProjection = (RobotProjection) ((RobotProjection) appContext
+                .getBean("robotProjection")).copy();
 
         System.out.println("Ended learning.\n");
     }
@@ -115,16 +95,16 @@ public class MainBeta extends JPanel implements ActionListener {
         g2.translate(0, 2 * 700 - 800);
         g2.scale(1, -1);
 
-        g2.draw(robotProjection.getBodyCoords());
+        g2.draw(curRobotProjection.getBodyCoords());
 
         Color colors[] = {Color.DARK_GRAY, Color.GRAY, Color.GREEN};
 
         Line2D.Double thigh, shin, foot;
-        for (int i = 0; i < robotProjection.getRobot().getLegsCount(); ++i) {
+        for (int i = 0; i < curRobotProjection.getRobot().getLegsCount(); ++i) {
             g2.setColor(colors[i]);
-            thigh = robotProjection.getThighCoords(i);
-            shin = robotProjection.getShinCoords(i);
-            foot = robotProjection.getFootCoords(i);
+            thigh = curRobotProjection.getThighCoords(i);
+            shin = curRobotProjection.getShinCoords(i);
+            foot = curRobotProjection.getFootCoords(i);
             g2.draw(new Ellipse2D.Double(thigh.x1 - 2, thigh.y1 - 2, 4, 4));
             g2.draw(new Ellipse2D.Double(shin.x1 - 2, shin.y1 - 2, 4, 4));
             g2.draw(new Ellipse2D.Double(shin.x2 - 2, shin.y2 - 2, 4, 4));
@@ -133,10 +113,10 @@ public class MainBeta extends JPanel implements ActionListener {
             g2.draw(foot);
         }
         g2.setColor(Color.BLACK);
-        g2.draw(new Line2D.Double(robotProjection.getGround().x1,
-                robotProjection.getGround().y1 - 2,
-                robotProjection.getGround().x2,
-                robotProjection.getGround().y2 - 2));
+        g2.draw(new Line2D.Double(curRobotProjection.getGround().x1,
+                curRobotProjection.getGround().y1 - 2,
+                curRobotProjection.getGround().x2,
+                curRobotProjection.getGround().y2 - 2));
     }
 
     @Override
@@ -152,39 +132,42 @@ public class MainBeta extends JPanel implements ActionListener {
 
         g2.setRenderingHints(rh);
 
-        System.out.println(state);
-        outputAllPossibleActions(state);
+        System.out.println(curState);
+        outputAllPossibleActions(curState);
 
-        RobotAction ra = (RobotAction) qLearning.argMax(state);
+        RobotAction ra = (RobotAction) ((QLearning) appContext.getBean(
+                "qLearning")).argMax(curState);
 
         if (ra == null) {
-            state = (RobotState) start.copy();
-            robotProjection = (RobotProjection) startRobotProjection.copy();
+            curState = (RobotState) ((RobotState) appContext.getBean("robotState"))
+                    .copy();
+            curRobotProjection = (RobotProjection) ((RobotProjection) appContext
+                    .getBean("robotProjection")).copy();
         } else {
 
-            robotProjection.getRobot()
+            curRobotProjection.getRobot()
                     .setSupportingLeg(ra.getSupportingLegIndex());
             try {
-                robotProjection.reInitialize();
+                curRobotProjection.reInitialize();
             } catch (HitObjectException ignored) {
             }
 
-            robotProjection.getRobot()
+            curRobotProjection.getRobot()
                     .setSupportingLeg((ra.getSupportingLegIndex() + 1) % 2);
             try {
-                robotProjection.reInitialize();
+                curRobotProjection.reInitialize();
             } catch (HitObjectException ignored) {
             }
 
-            robotProjection.getRobot()
+            curRobotProjection.getRobot()
                     .setSupportingLeg(ra.getSupportingLegIndex());
             try {
-                robotProjection.reInitialize();
+                curRobotProjection.reInitialize();
             } catch (HitObjectException ignored) {
             }
 
             try {
-                robotProjection.rotateSupportingLeg(
+                curRobotProjection.rotateSupportingLeg(
                         ra.getThighRotation(ra.getSupportingLegIndex()),
                         ra.getShinRotation(ra.getSupportingLegIndex()),
                         ra.getShinRotation(
@@ -193,11 +176,11 @@ public class MainBeta extends JPanel implements ActionListener {
             } catch (RobotFallException ignored) {
             }
 
-            for (int i = 0; i < robotProjection.getRobot()
+            for (int i = 0; i < curRobotProjection.getRobot()
                     .getLegsCount(); ++i) {
                 if (i != ra.getSupportingLegIndex()) {
                     try {
-                        robotProjection.rotateRegularLeg(i,
+                        curRobotProjection.rotateRegularLeg(i,
                                 ra.getThighRotation(i), ra.getShinRotation(i),
                                 ra.getShinRotation(i) - ra.getThighRotation(i));
                     } catch (HitObjectException ignored) {
@@ -205,12 +188,12 @@ public class MainBeta extends JPanel implements ActionListener {
                 }
             }
 
-            state.setSupportingLegIndex(ra.getSupportingLegIndex());
-            for (int i = 0; i < state.getLegsCount(); ++i) {
-                state.setThighAngle(i,
-                        robotProjection.getRobot().getLeg(i).thigh.angle);
-                state.setShinAngle(i,
-                        robotProjection.getRobot().getLeg(i).shin.angle);
+            curState.setSupportingLegIndex(ra.getSupportingLegIndex());
+            for (int i = 0; i < curState.getLegsCount(); ++i) {
+                curState.setThighAngle(i,
+                        curRobotProjection.getRobot().getLeg(i).thigh.angle);
+                curState.setShinAngle(i,
+                        curRobotProjection.getRobot().getLeg(i).shin.angle);
             }
         }
 
@@ -220,17 +203,17 @@ public class MainBeta extends JPanel implements ActionListener {
     }
 
     void outputAllPossibleActions(RobotState state) {
-        System.out.println("Actions list:");
-        for (Utils.Pair pair : mdp.getActionsList(state)) {
-            try {
-                System.out.println(
-                        pair.first + " " + qLearning.q.get(state.hash())
-                                .get(((com.vlfom.steplearn.core.learning
-                                        .general.Action) (pair.first))
-                                        .hash()));
-            } catch (Exception ignored) {
-            }
-        }
+//        System.out.println("Actions list:");
+//        for (Utils.Pair pair : mdp.getActionsList(curState)) {
+//            try {
+//                System.out.println(
+//                        pair.first + " " + qLearning.q.get(curState.hash())
+//                                .get(((com.vlfom.steplearn.core.learning
+//                                        .general.Action) (pair.first))
+//                                        .hash()));
+//            } catch (Exception ignored) {
+//            }
+//        }
     }
 
     @Override
@@ -240,8 +223,10 @@ public class MainBeta extends JPanel implements ActionListener {
 
     class MyKeyListener implements KeyListener {
         public void keyPressed(KeyEvent e) {
-            state = (RobotState) start.copy();
-            robotProjection = (RobotProjection) startRobotProjection.copy();
+            curState = (RobotState) ((RobotState) appContext.getBean("robotState"))
+                    .copy();
+            curRobotProjection = (RobotProjection) ((RobotProjection) appContext
+                    .getBean("robotProjection")).copy();
             System.out.println("Restarting.\n");
         }
 

@@ -1,6 +1,6 @@
 package com.vlfom.steplearn.core.learning.robot;
 
-import com.vlfom.steplearn.core.robot.draw.RobotProjection;
+import com.vlfom.steplearn.core.robot.RobotProjection;
 import com.vlfom.steplearn.core.robot.exceptions.HitObjectException;
 import com.vlfom.steplearn.core.robot.exceptions.RobotFallException;
 import com.vlfom.steplearn.core.learning.general.Action;

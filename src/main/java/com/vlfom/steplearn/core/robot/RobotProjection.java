@@ -1,8 +1,7 @@
-package com.vlfom.steplearn.core.robot.draw;
+package com.vlfom.steplearn.core.robot;
 
 import com.vlfom.steplearn.core.robot.exceptions.HitObjectException;
 import com.vlfom.steplearn.core.robot.exceptions.RobotFallException;
-import com.vlfom.steplearn.core.robot.Robot;
 import com.vlfom.steplearn.core.robot.legs.Leg;
 import com.vlfom.steplearn.core.util.Copyable;
 

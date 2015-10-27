@@ -1,18 +1,16 @@
-package com.vlfom.steplearn.spring.config.body;
+package com.vlfom.steplearn.spring.config.robot.body;
 
 import com.vlfom.steplearn.core.robot.body.Body;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
-/**
- * @author Vladimir Fomenko
- */
-
 @Component
-public class BodyConfig2 {
+public class BodyComponent2 {
 
     @Bean
-    public Body body() {
+    @Qualifier("body2")
+    public Body body2() {
         return new Body(100, 100, 5);
     }
 }
