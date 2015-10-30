@@ -6,6 +6,6 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
 @Configuration
 @EnableAspectJAutoProxy
-@ComponentScan
+@ComponentScan(basePackages = "com.vlfom")
 public class BasicConfiguration {
 }

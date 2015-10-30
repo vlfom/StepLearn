@@ -52,8 +52,8 @@ public class RobotAction extends Action {
     public String toString() {
         String string = "Action: ";
         for (int i = 0; i < shinRotation.size(); ++i) {
-            string += "{" + thighRotation.get(i) + ", " + shinRotation.get(i)
-                    + ", " + (shinRotation.get(i) - thighRotation.get(i)) +
+            string += "{" + thighRotation.get(i) + ", " + shinRotation.get(
+                    i) + ", " + (shinRotation.get(i) - thighRotation.get(i)) +
                     "} ";
         }
         string += "{" + supportingLegIndex + "}";

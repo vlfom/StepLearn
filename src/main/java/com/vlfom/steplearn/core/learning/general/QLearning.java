@@ -8,8 +8,8 @@ import java.util.Random;
 import java.util.TreeMap;
 
 public class QLearning {
-    public TreeMap<Long, TreeMap<Long, Double>> q;
-    Random random;
+    private TreeMap<Long, TreeMap<Long, Double>> q;
+    private Random random;
     private MarkovDecisionProcess mdp;
 
     public QLearning(MarkovDecisionProcess mdp) {
@@ -18,17 +18,18 @@ public class QLearning {
         random = new Random();
     }
 
+    public MarkovDecisionProcess getMdp() {
+        return mdp;
+    }
+
     public State iterateLearning(State state) {
         if (!q.containsKey(state.hash())) {
             populateState(state);
         }
 
         Action action = chooseNext(state);
-
         State next = mdp.applyAction(state, action);
-
         update(state, action, next);
-
         return next;
     }
 
@@ -39,7 +40,7 @@ public class QLearning {
         }
     }
 
-    public void update(State s, Action a, State n) {
+    private void update(State s, Action a, State n) {
         long sHash = s.hash();
         if (!q.containsKey(sHash)) {
             q.put(sHash, new TreeMap<>());
@@ -79,7 +80,7 @@ public class QLearning {
         return maxValue;
     }
 
-    public Action argMax(State s) {
+    private Action argMax(State s) {
         Long sHash = s.hash();
         if (!q.containsKey(sHash)) {
             return null;
@@ -101,25 +102,7 @@ public class QLearning {
         return mdp.getAction(s, bestAction);
     }
 
-    public Action argMax2(State s) {
-        Long sHash = s.hash();
-        if (!q.containsKey(sHash)) {
-            return null;
-        }
-        TreeMap<Long, Double> actions = q.get(sHash);
-
-        Long bestAction = actions.firstKey();
-        Double maxValue = actions.firstEntry().getValue();
-        for (Map.Entry<Long, Double> entry : actions.entrySet()) {
-            if (entry.getValue() > maxValue) {
-                maxValue = entry.getValue();
-                bestAction = entry.getKey();
-            } else if (entry.getValue()
-                    .equals(maxValue) && Math.random() < 0.5) {
-                maxValue = entry.getValue();
-                bestAction = entry.getKey();
-            }
-        }
-        return mdp.getAction(s, bestAction);
+    public Action getArgMax(State s) {
+        return argMax(s);
     }
 }

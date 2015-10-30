@@ -11,6 +11,9 @@ public class RobotState extends State {
     private int supportingLegIndex;
     private ArrayList<Integer> thighAngle, shinAngle;
 
+    public RobotState() {
+    }
+
     public RobotState(int legsCount) {
         this.thighAngle = new ArrayList<>(Collections.nCopies(legsCount, 0));
         this.shinAngle = new ArrayList<>(Collections.nCopies(legsCount, 0));
@@ -76,8 +79,8 @@ public class RobotState extends State {
     public String toString() {
         String string = "State: ";
         for (int i = 0; i < legsCount; ++i) {
-            string += "{" + thighAngle.get(i) + ", " + shinAngle.get(i) + " "
-                    + (shinAngle.get(i) - thighAngle.get(i)) +
+            string += "{" + thighAngle.get(i) + ", " + shinAngle.get(
+                    i) + " " + (shinAngle.get(i) - thighAngle.get(i)) +
                     "} ";
         }
         string += "{" + this.supportingLegIndex + "}";
