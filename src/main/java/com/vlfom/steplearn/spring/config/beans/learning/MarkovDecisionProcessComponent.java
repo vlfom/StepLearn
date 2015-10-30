@@ -1,4 +1,4 @@
-package com.vlfom.steplearn.spring.config.learning;
+package com.vlfom.steplearn.spring.config.beans.learning;
 
 import com.vlfom.steplearn.core.learning.general.MarkovDecisionProcess;
 import com.vlfom.steplearn.core.learning.robot.RobotMarkovDecisionProcess;

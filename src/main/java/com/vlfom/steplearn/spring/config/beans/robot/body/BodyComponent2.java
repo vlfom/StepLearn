@@ -1,4 +1,4 @@
-package com.vlfom.steplearn.spring.config.robot.body;
+package com.vlfom.steplearn.spring.config.beans.robot.body;
 
 import com.vlfom.steplearn.core.robot.body.Body;
 import org.springframework.beans.factory.annotation.Qualifier;

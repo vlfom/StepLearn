@@ -1,4 +1,4 @@
-package com.vlfom.steplearn.spring.config.learning;
+package com.vlfom.steplearn.spring.config.beans.learning;
 
 import com.vlfom.steplearn.core.learning.robot.RobotState;
 import com.vlfom.steplearn.core.robot.Robot;
