@@ -32,8 +32,8 @@ public class MainBeta extends JPanel implements ActionListener {
 
         qLearningRobotModel = (QLearningRobotModel) appContext.getBean
                 ("qLearningRobotModel");
-        qLearningRobotModel.iterateLearning(100, 100);
-        qLearningRobotModel.calibrateLearning(100, 100);
+        qLearningRobotModel.iterateLearning(100, 1000);
+        qLearningRobotModel.calibrateLearning(100, 1000);
     }
 
     public static void main(String[] args) {
